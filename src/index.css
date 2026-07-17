@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background-color: #05050A;
+  color: #F8FAFC;
+  overflow-x: hidden;
+}
+
+.glass-panel {
+  @apply bg-white/[0.03] backdrop-blur-xl shadow-lg;
+}
+
+.text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400;
+}
