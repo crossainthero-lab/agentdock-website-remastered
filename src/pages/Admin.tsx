@@ -12,9 +12,11 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  Megaphone,
   RotateCcw,
   Upload,
 } from 'lucide-react';
+import { AnnouncementBar } from '../components/AnnouncementBar';
 import { Mermaid } from '../components/Mermaid';
 import { MarkdownContent } from '../components/MarkdownContent';
 import { parseMarkdownImport, slugify } from '../lib/contentImport';
@@ -23,11 +25,13 @@ import type {
   BlogPost,
   BlogPostInput,
   BlogPostStatus,
+  SiteAnnouncement,
+  SiteAnnouncementInput,
   TechnicalSection,
   TechnicalSectionInput,
 } from '../types/cms';
 
-type AdminView = 'dashboard' | 'blog' | 'technical';
+type AdminView = 'dashboard' | 'announcement' | 'blog' | 'technical';
 
 const emptyBlogDraft: BlogPostInput = {
   title: '',
@@ -47,6 +51,14 @@ const emptyTechnicalDraft: TechnicalSectionInput = {
   mermaidSource: '',
   sortOrder: 0,
   isVisible: true,
+};
+
+const emptyAnnouncementDraft: SiteAnnouncementInput = {
+  enabled: false,
+  text: '',
+  linkText: '',
+  linkUrl: '',
+  updatedAt: null,
 };
 
 export function Admin() {
@@ -86,6 +98,7 @@ export function Admin() {
           </div>
           <nav className="flex lg:flex-col gap-2 overflow-x-auto">
             <AdminNavButton active={view === 'dashboard'} onClick={() => setView('dashboard')} icon={<LayoutDashboard className="w-4 h-4" />} label="Dashboard" />
+            <AdminNavButton active={view === 'announcement'} onClick={() => setView('announcement')} icon={<Megaphone className="w-4 h-4" />} label="Announcement Bar" />
             <AdminNavButton active={view === 'blog'} onClick={() => setView('blog')} icon={<FileText className="w-4 h-4" />} label="Blog" />
             <AdminNavButton active={view === 'technical'} onClick={() => setView('technical')} icon={<Pencil className="w-4 h-4" />} label="AIgency Technical" />
           </nav>
@@ -101,6 +114,7 @@ export function Admin() {
             </div>
           )}
           {view === 'dashboard' && <Dashboard />}
+          {view === 'announcement' && <AnnouncementAdmin onMessage={setMessage} />}
           {view === 'blog' && <BlogAdmin onMessage={setMessage} />}
           {view === 'technical' && <TechnicalAdmin onMessage={setMessage} />}
         </section>
@@ -171,9 +185,13 @@ function Dashboard() {
     <div>
       <h2 className="text-3xl font-bold text-white mb-3">Dashboard</h2>
       <p className="text-[var(--color-ad-text-muted)] max-w-2xl">
-        Manage published blog content and the structured AIgency Technical Architecture page. Blog publishing is explicit; technical architecture saves go live immediately.
+        Manage the announcement bar, published blog content, and the structured AIgency Technical Architecture page. Announcement and technical changes go live immediately.
       </p>
-      <div className="mt-8 grid md:grid-cols-2 gap-4">
+      <div className="mt-8 grid md:grid-cols-3 gap-4">
+        <div className="rounded-lg border border-[var(--color-ad-border)] bg-[var(--color-ad-surface)] p-5">
+          <h3 className="font-bold text-white mb-2">Announcement Bar</h3>
+          <p className="text-sm text-[var(--color-ad-text-muted)]">Update the slim site-wide header announcement and optional link.</p>
+        </div>
         <div className="rounded-lg border border-[var(--color-ad-border)] bg-[var(--color-ad-surface)] p-5">
           <h3 className="font-bold text-white mb-2">Blog posts</h3>
           <p className="text-sm text-[var(--color-ad-text-muted)]">Create drafts, preview articles, publish, unpublish, or delete posts.</p>
@@ -183,6 +201,136 @@ function Dashboard() {
           <p className="text-sm text-[var(--color-ad-text-muted)]">Edit structured sections, Mermaid diagrams, visibility, and ordering.</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function AnnouncementAdmin({ onMessage }: { onMessage: (message: string) => void }) {
+  const [draft, setDraft] = useState<SiteAnnouncementInput>(emptyAnnouncementDraft);
+  const [loadedSnapshot, setLoadedSnapshot] = useState(JSON.stringify(emptyAnnouncementDraft));
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+  const isDirty = JSON.stringify(draft) !== loadedSnapshot;
+
+  useUnsavedWarning(isDirty);
+
+  const loadAnnouncement = async () => {
+    setIsLoading(true);
+    setError('');
+    const response = await apiRequest<SiteAnnouncement>('/api/admin/announcement');
+    if (response.ok) {
+      const nextDraft = toAnnouncementInput(response.data);
+      setDraft(nextDraft);
+      setLoadedSnapshot(JSON.stringify(nextDraft));
+    } else if ('error' in response) {
+      setError(response.error);
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    void loadAnnouncement();
+  }, []);
+
+  const updateDraft = (patch: Partial<SiteAnnouncementInput>) => {
+    setDraft((current) => ({ ...current, ...patch }));
+    setError('');
+  };
+
+  const save = async () => {
+    setIsSaving(true);
+    setError('');
+    const response = await apiRequest<SiteAnnouncement>('/api/admin/announcement', {
+      method: 'PUT',
+      body: draft,
+    });
+
+    if (response.ok) {
+      const nextDraft = toAnnouncementInput(response.data);
+      setDraft(nextDraft);
+      setLoadedSnapshot(JSON.stringify(nextDraft));
+      onMessage('Announcement bar saved. Changes are live on the public site.');
+    } else if ('error' in response) {
+      setError(response.error);
+    }
+    setIsSaving(false);
+  };
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-3xl font-bold text-white">Announcement Bar</h2>
+        <p className="mt-2 text-sm text-[var(--color-accent-amber)]">Saving updates the public header immediately.</p>
+      </div>
+
+      {error && <AdminError error={error} />}
+      {isLoading ? (
+        <p className="text-[var(--color-ad-text-muted)]">Loading announcement settings...</p>
+      ) : (
+        <div className="grid xl:grid-cols-[minmax(24rem,34rem)_1fr] gap-6">
+          <EditorPanel title="Settings">
+            <div className="space-y-4">
+              <label className="flex items-center justify-between gap-4 rounded-md border border-[var(--color-ad-border)] bg-[var(--color-ad-bg)] px-3 py-3 text-sm text-white">
+                <span>
+                  <span className="block font-medium">Enabled</span>
+                  <span className="text-xs text-[var(--color-ad-text-muted)]">Show the announcement above the main navigation.</span>
+                </span>
+                <input type="checkbox" checked={draft.enabled} onChange={(event) => updateDraft({ enabled: event.target.checked })} className="h-5 w-5 accent-[var(--color-accent-purple)]" />
+              </label>
+
+              <AdminField label="Announcement text">
+                <input
+                  value={draft.text}
+                  onChange={(event) => updateDraft({ text: event.target.value })}
+                  className="admin-input"
+                  maxLength={220}
+                  placeholder="AgentDock v0.1.1 is now available for Windows."
+                />
+                <p className="mt-2 text-xs text-[var(--color-ad-text-muted)]">{draft.text.length}/220 characters</p>
+              </AdminField>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <AdminField label="Link text">
+                  <input
+                    value={draft.linkText ?? ''}
+                    onChange={(event) => updateDraft({ linkText: event.target.value })}
+                    className="admin-input"
+                    maxLength={60}
+                    placeholder="Download now"
+                  />
+                </AdminField>
+                <AdminField label="Link URL">
+                  <input
+                    value={draft.linkUrl ?? ''}
+                    onChange={(event) => updateDraft({ linkUrl: event.target.value })}
+                    className="admin-input"
+                    placeholder="https://..."
+                  />
+                </AdminField>
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button disabled={isSaving} onClick={save} className="admin-primary-button"><Save className="w-4 h-4" /> {isSaving ? 'Saving...' : 'Save announcement'}</button>
+              <button disabled={isSaving || !isDirty} onClick={loadAnnouncement} className="admin-secondary-button"><RotateCcw className="w-4 h-4" /> Reset unsaved</button>
+            </div>
+            {isDirty && <p className="mt-3 text-xs text-[var(--color-accent-amber)]">Unsaved changes</p>}
+          </EditorPanel>
+
+          <EditorPanel title="Preview">
+            <div className="overflow-hidden rounded-md border border-[var(--color-ad-border)] bg-[var(--color-ad-bg)]">
+              <AnnouncementBar announcement={{ enabled: draft.enabled, text: draft.text, linkText: draft.linkText ?? '', linkUrl: draft.linkUrl ?? '', updatedAt: draft.updatedAt ?? null }} />
+              <div className="flex h-14 items-center justify-between border-t border-[var(--color-ad-border)] px-4 text-sm text-[var(--color-ad-text-muted)]">
+                <span className="font-bold text-white">AgentDock</span>
+                <span>Navigation preview</span>
+              </div>
+            </div>
+            {!draft.enabled && <p className="mt-3 text-xs text-[var(--color-ad-text-muted)]">The public bar is hidden while disabled.</p>}
+            {draft.enabled && !draft.text.trim() && <p className="mt-3 text-xs text-[var(--color-accent-amber)]">The public bar will remain hidden until announcement text is added.</p>}
+          </EditorPanel>
+        </div>
+      )}
     </div>
   );
 }
@@ -813,6 +961,16 @@ function toTechnicalInput(section: TechnicalSection): TechnicalSectionInput {
     sortOrder: section.sortOrder,
     isVisible: section.isVisible,
     updatedAt: section.updatedAt,
+  };
+}
+
+function toAnnouncementInput(announcement: SiteAnnouncement): SiteAnnouncementInput {
+  return {
+    enabled: announcement.enabled,
+    text: announcement.text,
+    linkText: announcement.linkText,
+    linkUrl: announcement.linkUrl,
+    updatedAt: announcement.updatedAt,
   };
 }
 

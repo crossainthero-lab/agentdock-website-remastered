@@ -5,6 +5,8 @@ import type {
   BlogPostInput,
   BlogPostStatus,
   BlogPostSummary,
+  SiteAnnouncement,
+  SiteAnnouncementInput,
   TechnicalSection,
   TechnicalSectionInput,
 } from "../../src/types/cms";
@@ -61,15 +63,32 @@ type TechnicalRow = {
   updated_at: string;
 };
 
+type SiteSettingsRow = {
+  setting_key: string;
+  setting_value: string;
+  updated_at: string;
+};
+
 const MAX_JSON_BYTES = 256 * 1024;
 const SESSION_COOKIE_NAME = "admin_session";
 const SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
 const MAX_LOGIN_FAILURES = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
+const ANNOUNCEMENT_SETTING_KEY = "announcement_bar";
+const MAX_ANNOUNCEMENT_TEXT_LENGTH = 220;
+const MAX_ANNOUNCEMENT_LINK_TEXT_LENGTH = 60;
+const MAX_ANNOUNCEMENT_LINK_URL_LENGTH = 500;
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const SECTION_KEY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const MERMAID_START_PATTERN =
   /^(flowchart|graph|sequenceDiagram|stateDiagram-v2|stateDiagram|classDiagram|erDiagram|gantt|journey|pie|gitGraph|mindmap|timeline|quadrantChart|requirementDiagram|c4Context|C4Context|sankey-beta|block-beta|packet-beta|xychart-beta|architecture-beta)\b/;
+const DEFAULT_ANNOUNCEMENT: SiteAnnouncement = {
+  enabled: false,
+  text: "",
+  linkText: "",
+  linkUrl: "",
+  updatedAt: null,
+};
 
 export async function handleLogin(request: Request, env: CmsEnv): Promise<Response> {
   try {
@@ -402,6 +421,65 @@ export async function deleteTechnicalSection(db: CmsDatabase, id: number): Promi
   return jsonOk({ deleted: true }, 200, undefined, "Technical section deleted.");
 }
 
+export async function getAnnouncementSettings(db: CmsDatabase): Promise<SiteAnnouncement> {
+  try {
+    const row = await db
+      .prepare(
+        `SELECT setting_key, setting_value, updated_at
+         FROM site_settings
+         WHERE setting_key = ?1
+         LIMIT 1`,
+      )
+      .bind(ANNOUNCEMENT_SETTING_KEY)
+      .first<SiteSettingsRow>();
+
+    return row ? mapAnnouncementSetting(row) : DEFAULT_ANNOUNCEMENT;
+  } catch (error) {
+    if (isMissingSiteSettingsError(error)) {
+      return DEFAULT_ANNOUNCEMENT;
+    }
+
+    throw error;
+  }
+}
+
+export async function updateAnnouncementSettings(db: CmsDatabase, rawInput: unknown): Promise<Response> {
+  const validation = validateAnnouncementInput(rawInput);
+  if ("error" in validation) {
+    return jsonError(validation.error, 400);
+  }
+
+  const input = validation.value;
+  const settingValue = JSON.stringify({
+    enabled: input.enabled,
+    text: input.text,
+    linkText: input.linkText,
+    linkUrl: input.linkUrl,
+  });
+
+  try {
+    await db
+      .prepare(
+        `INSERT INTO site_settings (setting_key, setting_value, updated_at)
+         VALUES (?1, ?2, CURRENT_TIMESTAMP)
+         ON CONFLICT(setting_key) DO UPDATE SET
+           setting_value = excluded.setting_value,
+           updated_at = CURRENT_TIMESTAMP`,
+      )
+      .bind(ANNOUNCEMENT_SETTING_KEY, settingValue)
+      .run();
+
+    return jsonOk(await getAnnouncementSettings(db), 200, undefined, "Announcement settings saved.");
+  } catch (error) {
+    if (isMissingSiteSettingsError(error)) {
+      return jsonError("Site settings migration has not been applied.", 500);
+    }
+
+    console.error("Announcement settings update failed", { message: getErrorMessage(error) });
+    return jsonError("Announcement settings could not be saved.", 500);
+  }
+}
+
 export async function readJsonBody<T = unknown>(
   request: Request,
 ): Promise<{ value: T } | { error: string }> {
@@ -615,6 +693,54 @@ function validateTechnicalInput(rawInput: unknown): { value: Required<TechnicalS
   };
 }
 
+function validateAnnouncementInput(rawInput: unknown): { value: Required<SiteAnnouncementInput> } | { error: string } {
+  if (!rawInput || typeof rawInput !== "object" || Array.isArray(rawInput)) {
+    return { error: "Announcement settings payload must be an object." };
+  }
+
+  const input = rawInput as Record<string, unknown>;
+  const enabled = input.enabled === true;
+  const text = normalizeString(input.text);
+  const linkText = normalizeString(input.linkText);
+  const linkUrl = normalizeString(input.linkUrl);
+  const updatedAt = normalizeNullableString(input.updatedAt);
+
+  if (input.enabled !== true && input.enabled !== false) {
+    return { error: "Enabled must be true or false." };
+  }
+
+  if (text.length > MAX_ANNOUNCEMENT_TEXT_LENGTH) {
+    return { error: `Announcement text must be ${MAX_ANNOUNCEMENT_TEXT_LENGTH} characters or fewer.` };
+  }
+
+  if (enabled && !text) {
+    return { error: "Announcement text is required when the bar is enabled." };
+  }
+
+  if (linkText.length > MAX_ANNOUNCEMENT_LINK_TEXT_LENGTH) {
+    return { error: `Link text must be ${MAX_ANNOUNCEMENT_LINK_TEXT_LENGTH} characters or fewer.` };
+  }
+
+  if (linkUrl.length > MAX_ANNOUNCEMENT_LINK_URL_LENGTH) {
+    return { error: `Link URL must be ${MAX_ANNOUNCEMENT_LINK_URL_LENGTH} characters or fewer.` };
+  }
+
+  const linkUrlError = validateAnnouncementUrl(linkUrl);
+  if (linkUrlError) {
+    return { error: linkUrlError };
+  }
+
+  return {
+    value: {
+      enabled,
+      text,
+      linkText: linkUrl ? linkText : "",
+      linkUrl,
+      updatedAt,
+    },
+  };
+}
+
 async function getPostBySlug(db: CmsDatabase, slug: string): Promise<BlogPost | null> {
   const row = await db
     .prepare(
@@ -683,6 +809,25 @@ function mapTechnicalSection(row: TechnicalRow): TechnicalSection {
   };
 }
 
+function mapAnnouncementSetting(row: SiteSettingsRow): SiteAnnouncement {
+  try {
+    const parsed = JSON.parse(row.setting_value) as Partial<SiteAnnouncement>;
+    const text = normalizeString(parsed.text);
+    const linkUrl = normalizeString(parsed.linkUrl);
+    const linkText = normalizeString(parsed.linkText);
+
+    return {
+      enabled: parsed.enabled === true,
+      text: text.slice(0, MAX_ANNOUNCEMENT_TEXT_LENGTH),
+      linkText: linkUrl ? linkText.slice(0, MAX_ANNOUNCEMENT_LINK_TEXT_LENGTH) : "",
+      linkUrl: validateAnnouncementUrl(linkUrl) ? "" : linkUrl,
+      updatedAt: row.updated_at,
+    };
+  } catch {
+    return DEFAULT_ANNOUNCEMENT;
+  }
+}
+
 function mapDatabaseWriteError(error: unknown, fallback: string): Response {
   const message = error instanceof Error ? error.message : "";
   if (/unique|constraint/i.test(message)) {
@@ -691,6 +836,30 @@ function mapDatabaseWriteError(error: unknown, fallback: string): Response {
 
   console.error("CMS database write failed", { message });
   return jsonError(fallback, 500);
+}
+
+function validateAnnouncementUrl(value: string): string | null {
+  if (!value) {
+    return null;
+  }
+
+  if (value.startsWith("/")) {
+    if (!value.startsWith("/") || value.startsWith("//") || value.includes("..") || /\s/.test(value)) {
+      return "Link URL must be a valid HTTPS URL or root-relative path.";
+    }
+
+    return null;
+  }
+
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:") {
+      return "Link URL must be a valid HTTPS URL or root-relative path.";
+    }
+    return null;
+  } catch {
+    return "Link URL must be a valid HTTPS URL or root-relative path.";
+  }
 }
 
 function validateCoverImage(value: string): string | null {
@@ -715,6 +884,10 @@ function validateCoverImage(value: string): string | null {
   } catch {
     return "Cover image must be an existing asset path or a valid HTTPS URL.";
   }
+}
+
+function isMissingSiteSettingsError(error: unknown): boolean {
+  return /no such table: site_settings/i.test(getErrorMessage(error));
 }
 
 async function createSessionCookie(request: Request, secret: string): Promise<string> {

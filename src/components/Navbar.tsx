@@ -4,10 +4,13 @@ import { Github, ArrowRight } from 'lucide-react';
 import { AgentDockIcon } from './icons/AgentDockIcon';
 import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
+import { AnnouncementBar, isVisibleAnnouncement } from './AnnouncementBar';
+import type { ApiResponse, SiteAnnouncement } from '../types/cms';
 
 export function Navbar() {
   const location = useLocation();
   const [activeSection, setActiveSection] = useState('overview');
+  const [announcement, setAnnouncement] = useState<SiteAnnouncement | null>(null);
 
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -18,6 +21,31 @@ export function Navbar() {
 
   const isAigency = location.pathname.startsWith('/aigency');
   const isTechnical = location.pathname === '/aigency/technical';
+  const hasAnnouncement = isVisibleAnnouncement(announcement);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetch('/api/announcement')
+      .then(async (response) => {
+        const body = await response.json() as ApiResponse<SiteAnnouncement>;
+        if (!response.ok || !body.ok) {
+          throw new Error('error' in body ? body.error : 'Announcement could not be loaded.');
+        }
+        if (isMounted) {
+          setAnnouncement(body.data);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setAnnouncement(null);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isAigency || isTechnical) return;
@@ -47,7 +75,7 @@ export function Navbar() {
       const el = document.getElementById(id);
       if (el) {
         window.scrollTo({
-          top: el.offsetTop - 120, // 64 (nav) + 48 (subnav) + padding
+          top: el.offsetTop - (hasAnnouncement ? 154 : 120),
           behavior: 'smooth'
         });
         window.history.pushState(null, '', `/aigency#${id}`);
@@ -57,6 +85,8 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full flex flex-col bg-[var(--color-ad-bg)]/80 backdrop-blur-md">
+      <AnnouncementBar announcement={announcement} />
+
       {/* Primary Navigation */}
       <div className="border-b border-[var(--color-ad-border)] w-full">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between max-w-5xl">

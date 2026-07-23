@@ -56,6 +56,22 @@ export interface TechnicalSectionInput {
   updatedAt?: string;
 }
 
+export interface SiteAnnouncement {
+  enabled: boolean;
+  text: string;
+  linkText: string;
+  linkUrl: string;
+  updatedAt: string | null;
+}
+
+export interface SiteAnnouncementInput {
+  enabled: boolean;
+  text: string;
+  linkText?: string;
+  linkUrl?: string;
+  updatedAt?: string | null;
+}
+
 export interface ApiErrorResponse {
   ok: false;
   error: string;
