@@ -27,10 +27,10 @@ export const currentDownloads = {
       version: '0.1.1',
       type: '.exe',
       arch: 'x64',
-      url: 'https://github.com/crossainthero-lab/AgentDock/releases/download/v0.1.1/AgentDock.Setup.0.1.1.exe',
+      url: 'https://github.com/crossainthero-lab/AgentDock/releases/download/v0.1.1_windows/AgentDock.Setup.0.1.1.exe',
       available: true,
       recommended: true,
-      releaseNotesUrl: 'https://github.com/crossainthero-lab/AgentDock/releases/tag/v0.1.1',
+      releaseNotesUrl: 'https://github.com/crossainthero-lab/AgentDock/releases/tag/v0.1.1_windows',
     },
     {
       id: 'win-portable',
@@ -39,9 +39,9 @@ export const currentDownloads = {
       version: '0.1.1',
       type: '.exe',
       arch: 'x64',
-      url: 'https://github.com/crossainthero-lab/AgentDock/releases/download/v0.1.1/AgentDock.0.1.1.exe',
+      url: 'https://github.com/crossainthero-lab/AgentDock/releases/download/v0.1.1_windows/AgentDock.0.1.1.exe',
       available: true,
-      releaseNotesUrl: 'https://github.com/crossainthero-lab/AgentDock/releases/tag/v0.1.1',
+      releaseNotesUrl: 'https://github.com/crossainthero-lab/AgentDock/releases/tag/v0.1.1_windows',
     }
   ] as DownloadOption[],
   macos: [
