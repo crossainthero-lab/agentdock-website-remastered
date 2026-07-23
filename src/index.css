@@ -35,8 +35,87 @@ body {
 }
 .markdown-body h1 { font-size: 2.25rem; font-weight: 700; margin-bottom: 1.5rem; margin-top: 2rem; color: white; }
 .markdown-body h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; margin-top: 2rem; color: white; border-bottom: 1px solid var(--color-ad-border); padding-bottom: 0.5rem; }
+.markdown-body h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.75rem; margin-top: 1.5rem; color: white; }
 .markdown-body p { margin-bottom: 1.25rem; line-height: 1.75; color: var(--color-ad-text-muted); }
 .markdown-body a { color: #60a5fa; text-decoration: none; }
 .markdown-body a:hover { color: #93c5fd; text-decoration: underline; }
 .markdown-body ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1.25rem; color: var(--color-ad-text-muted); }
+.markdown-body ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1.25rem; color: var(--color-ad-text-muted); }
+.markdown-body li { margin-bottom: 0.35rem; }
 .markdown-body strong { color: white; font-weight: 600; }
+.markdown-body em { color: var(--color-ad-text); }
+.markdown-body blockquote { margin: 1.5rem 0; border-left: 3px solid var(--color-accent-amber); background: var(--color-accent-amber-soft); padding: 1rem; color: var(--color-accent-amber); border-radius: 0.375rem; }
+.markdown-body blockquote p { color: var(--color-accent-amber); margin: 0; }
+.markdown-body code { color: white; background: var(--color-ad-surface-hover); border: 1px solid var(--color-ad-border); border-radius: 0.25rem; padding: 0.1rem 0.3rem; font-size: 0.9em; }
+.markdown-body pre { background: #050508; border: 1px solid var(--color-ad-border); border-radius: 0.5rem; padding: 1rem; overflow-x: auto; margin: 1.5rem 0; }
+.markdown-body pre code { background: transparent; border: 0; padding: 0; }
+.markdown-body table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; color: var(--color-ad-text-muted); }
+.markdown-body th, .markdown-body td { border: 1px solid var(--color-ad-border); padding: 0.75rem; text-align: left; }
+.markdown-body th { color: white; background: var(--color-ad-surface); }
+.markdown-body img { max-width: 100%; border-radius: 0.5rem; border: 1px solid var(--color-ad-border); margin: 1.5rem 0; }
+.markdown-body hr { border: 0; border-top: 1px solid var(--color-ad-border); margin: 2rem 0; }
+
+.admin-input,
+.admin-textarea {
+  width: 100%;
+  border-radius: 0.375rem;
+  border: 1px solid var(--color-ad-border);
+  background: var(--color-ad-bg);
+  color: white;
+  padding: 0.625rem 0.75rem;
+  outline: none;
+}
+
+.admin-input:focus,
+.admin-textarea:focus {
+  border-color: var(--color-accent-purple);
+}
+
+.admin-primary-button,
+.admin-secondary-button,
+.admin-danger-button,
+.admin-mini-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--color-ad-border);
+  padding: 0.55rem 0.8rem;
+  font-size: 0.875rem;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.admin-primary-button {
+  background: var(--color-accent-purple);
+  color: white;
+  border-color: var(--color-accent-purple);
+  font-weight: 700;
+}
+
+.admin-secondary-button,
+.admin-mini-button {
+  background: var(--color-ad-bg);
+  color: var(--color-ad-text-muted);
+}
+
+.admin-mini-button {
+  padding: 0.35rem 0.55rem;
+  font-size: 0.75rem;
+}
+
+.admin-danger-button {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.admin-primary-button:hover,
+.admin-secondary-button:hover,
+.admin-mini-button:hover {
+  color: white;
+  background: var(--color-ad-surface-hover);
+}
+
+.admin-danger-button:hover {
+  background: rgba(239, 68, 68, 0.18);
+}

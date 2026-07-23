@@ -4,6 +4,7 @@ build/
 .vite/
 .cache/
 .wrangler/
+.private/
 .env
 .env.*
 !.env.example

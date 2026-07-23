@@ -8,6 +8,14 @@
     "build": "vite build",
     "preview": "vite preview",
     "dev:pages": "npm run build && npx wrangler pages dev dist",
+    "deploy": "npm run build && npx wrangler pages deploy dist",
+    "test": "npm run test:waitlist && npm run test:cms",
+    "test:waitlist": "tsx tests/waitlist.test.ts",
+    "test:cms": "tsx tests/cms.test.ts",
+    "admin:credentials": "tsx scripts/generate-admin-credentials.ts",
+    "cf:typegen": "npx wrangler types",
+    "db:migrate:local": "npx wrangler d1 migrations apply agentdock-waitlist --local",
+    "db:migrate:remote": "npx wrangler d1 migrations apply agentdock-waitlist --remote",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit"
   },
@@ -29,6 +37,7 @@
     "vite": "^6.2.3"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260723.1",
     "@types/dompurify": "^3.0.5",
     "@types/express": "^4.17.21",
     "@types/marked": "^5.0.2",
@@ -38,6 +47,7 @@
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.3"
+    "vite": "^6.2.3",
+    "wrangler": "^4.113.0"
   }
 }

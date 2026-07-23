@@ -2,38 +2,46 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowRight, Terminal, Workflow, Network, Server, GitBranch, Layers, ShieldCheck, Database, Cpu, FolderTree } from 'lucide-react';
 import { Mermaid } from '../components/Mermaid';
+import { WAITLIST_SECTION_ID, WAITLIST_SECTION_URL } from '../config/waitlist';
+import { WaitlistForm } from '../components/WaitlistForm';
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 export function AIgency() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.substring(1);
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, [location]);
   return (
     <div className="flex flex-col gap-32 pb-32 overflow-hidden">
-      
-      {/* Sub-navigation */}
-      <div className="sticky top-[72px] z-30 bg-[var(--color-ad-surface)]/80 backdrop-blur-md border-b border-[var(--color-ad-border)] w-full py-3 px-6 shadow-sm overflow-x-auto whitespace-nowrap scrollbar-hide">
-        <div className="container mx-auto max-w-5xl flex gap-6 items-center text-sm font-medium">
-          <a href="#overview" className="text-white hover:text-[var(--color-accent-purple-hover)] transition-colors">Overview</a>
-          <a href="#how-it-works" className="text-[var(--color-ad-text-muted)] hover:text-white transition-colors">How it works</a>
-          <a href="#comparison" className="text-[var(--color-ad-text-muted)] hover:text-white transition-colors">AgentDock vs AIgency</a>
-          <Link to="/aigency/technical" className="text-[var(--color-accent-blue)] flex items-center gap-1 hover:text-[var(--color-accent-blue-border)] transition-colors">
-            Technical Architecture <ArrowRight className="w-3 h-3" />
-          </Link>
-        </div>
-      </div>
-
       {/* Hero Section */}
-      <section id="overview" className="container mx-auto px-6 pt-16 text-center max-w-4xl relative">
+      <section id="overview" className="container mx-auto px-6 pt-16 md:pt-24 text-center max-w-4xl relative scroll-mt-32">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[var(--color-accent-purple)]/5 blur-[150px] rounded-full pointer-events-none -z-10"></div>
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: "easeOut" }}>
-          <div className="inline-flex items-center gap-2 px-3 py-1 mb-8 text-xs font-semibold text-[var(--color-accent-purple)] bg-[var(--color-accent-purple-soft)] border border-[var(--color-accent-purple-border)] rounded-full uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3 py-1 mb-6 text-xs font-semibold text-[var(--color-accent-purple)] bg-[var(--color-accent-purple-soft)] border border-[var(--color-accent-purple-border)] rounded-full uppercase tracking-wider">
             <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-purple)] animate-pulse shadow-[0_0_8px_var(--color-accent-purple)]"></div>
             In Development
           </div>
+          
+          <p className="text-sm font-medium text-[var(--color-ad-text-muted)] mb-8 max-w-lg mx-auto">
+            AIgency is in development. Join the waitlist for development updates and early-access announcements.
+          </p>
           <h1 className="text-5xl md:text-6xl font-bold text-white mb-8 tracking-tight leading-[1.1]">
             Multi-agent coordination,<br/>
             <span className="text-[var(--color-accent-purple)] drop-shadow-[0_0_15px_var(--color-accent-purple-glow)]">orchestrated locally.</span>
           </h1>
           <p className="text-lg md:text-xl text-[var(--color-ad-text-muted)] max-w-2xl mx-auto leading-relaxed mb-10">
             AIgency is a planned multi-agent coordination platform built around the AgentDock workflow. 
-            Instead of prompting Claude, Codex, and agy separately, AIgency is designed to orchestrate them inside one shared project environment.
+            Instead of prompting Claude Code, OpenAI Codex, and Google Antigravity separately, AIgency is designed to orchestrate them inside one shared project environment.
           </p>
           <div className="flex justify-center">
             <Link to="/aigency/technical" className="inline-flex items-center gap-2 px-8 py-3.5 text-sm font-bold text-[var(--color-accent-blue)] bg-[var(--color-accent-blue-soft)] border border-[var(--color-accent-blue-border)] rounded-md hover:bg-[var(--color-ad-surface)] hover:text-white transition-all">
@@ -43,11 +51,20 @@ export function AIgency() {
         </motion.div>
       </section>
 
+      {/* Waitlist Form Section */}
+      <motion.section 
+        id={WAITLIST_SECTION_ID}
+        initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+        className="container mx-auto px-6 max-w-5xl scroll-mt-32"
+      >
+        <WaitlistForm />
+      </motion.section>
+
       {/* The Concept */}
       <motion.section 
         id="how-it-works"
         initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.7, ease: "easeOut" }}
-        className="container mx-auto px-6 max-w-5xl"
+        className="container mx-auto px-6 max-w-5xl scroll-mt-32"
       >
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
@@ -96,8 +113,8 @@ export function AIgency() {
     O --> P[Permission and Approval Layer]
 
     T --> A1[Claude Code Adapter]
-    T --> A2[Codex Adapter]
-    T --> A3[agy Adapter]
+    T --> A2[OpenAI Codex Adapter]
+    T --> A3[Google Antigravity Adapter]
 
     A1 --> W[Shared Project Workspace]
     A2 --> W
@@ -134,11 +151,11 @@ export function AIgency() {
             <h2 className="text-xl font-bold text-white mb-2">Agent handoff</h2>
             <p className="text-[var(--color-ad-text-muted)] mb-6 text-sm">One example of a structured multi-agent workflow.</p>
             <Mermaid chart={`flowchart TD
-    S[User objective] --> C[Claude analyses architecture]
-    C --> H[Structured handoff]
-    H --> X[Codex implements changes]
-    X --> V[Checks and validation]
-    V --> G[agy reviews or tests]
+    S[User objective] --> C[Claude Code analyses architecture]
+    C --> H[Create task graph]
+    H --> X[OpenAI Codex implements changes]
+    X --> V[Run local tests]
+    V --> G[Google Antigravity reviews or tests]
     G --> R[Unified result for user]`} />
           </div>
         </div>
@@ -156,7 +173,7 @@ export function AIgency() {
           {[
             { icon: <Terminal className="w-5 h-5" />, title: 'User control layer', desc: 'Where the user creates projects, assigns objectives, reviews progress, changes permissions, approves actions, and inspects results.' },
             { icon: <Workflow className="w-5 h-5" />, title: 'Orchestration layer', desc: 'Responsible for splitting work, selecting agents, managing task dependencies, routing context, and coordinating handoffs.' },
-            { icon: <Network className="w-5 h-5" />, title: 'Agent adapters', desc: 'Connect AIgency to supported agents such as Claude Code, Codex, and agy, while preserving their native capabilities.' },
+            { icon: <Network className="w-5 h-5" />, title: 'Agent adapters', desc: 'Connect AIgency to supported agents such as Claude Code, OpenAI Codex, and Google Antigravity, while preserving their native capabilities.' },
             { icon: <FolderTree className="w-5 h-5" />, title: 'Workspace layer', desc: 'Manages repositories, project files, workspaces, sessions, branches, and isolated worktrees.' },
             { icon: <ShieldCheck className="w-5 h-5" />, title: 'Safety and approval layer', desc: 'Controls permissions, risky commands, file changes, tool access, external actions, and human approval checkpoints.' },
             { icon: <Database className="w-5 h-5" />, title: 'History and observability layer', desc: 'Records tasks, agent messages, handoffs, decisions, commands, file changes, errors, approvals, and final results.' },
@@ -172,11 +189,11 @@ export function AIgency() {
         </div>
       </motion.section>
 
-      {/* Comparison Section */}
+      {/* AgentDock vs AIgency */}
       <motion.section 
         id="comparison"
         initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.7 }}
-        className="container mx-auto px-6 max-w-5xl"
+        className="container mx-auto px-6 max-w-5xl scroll-mt-32"
       >
         <h2 className="text-3xl font-bold text-white mb-12 text-center">The Evolution</h2>
         <div className="grid md:grid-cols-2 gap-8 relative">
@@ -193,7 +210,7 @@ export function AIgency() {
               <p className="text-[var(--color-ad-text-muted)] mb-8">AgentDock is the desktop control layer for coding-agent command-line tools.</p>
               
               <ul className="space-y-4 text-sm text-[var(--color-ad-text-muted)] flex-1 font-medium">
-                <li className="flex items-start gap-3"><span className="text-[var(--color-accent-purple)]">→</span> Claude Code, Codex, and agy inside one application</li>
+                <li className="flex items-start gap-3"><span className="text-[var(--color-accent-purple)]">→</span> Claude Code, OpenAI Codex, and Google Antigravity inside one application</li>
                 <li className="flex items-start gap-3"><span className="text-[var(--color-accent-purple)]">→</span> Workspace and repository selection</li>
                 <li className="flex items-start gap-3"><span className="text-[var(--color-accent-purple)]">→</span> Separate agent sessions</li>
                 <li className="flex items-start gap-3"><span className="text-[var(--color-accent-purple)]">→</span> Model and reasoning controls</li>
@@ -227,22 +244,35 @@ export function AIgency() {
         </div>
       </motion.section>
 
-      {/* CTA */}
+      {/* Final Waitlist Section */}
       <motion.section 
-        initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.5 }}
-        className="text-center p-12 border border-[var(--color-ad-border)] bg-[var(--color-ad-surface)] rounded-2xl max-w-4xl mx-auto hover:border-[var(--color-accent-purple-border)] transition-all"
+        initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.7 }}
+        className="container mx-auto px-6 max-w-5xl mt-16"
       >
-        <h2 className="text-2xl font-bold text-white mb-6">Explore the details</h2>
-        <p className="text-[var(--color-ad-text-muted)] mb-10 max-w-xl mx-auto text-sm">
-          Dive deeper into the technical architecture of AIgency and how the coordination layer is being designed.
-        </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link to="/aigency/technical" className="px-8 py-3 text-sm font-medium text-white bg-[var(--color-accent-blue)] border border-[var(--color-accent-blue-border)] rounded-md hover:bg-[var(--color-accent-blue-soft)] hover:shadow-[0_0_15px_var(--color-accent-blue-soft)] transition-all">
-            Technical Architecture
-          </Link>
-          <Link to="/downloads" className="px-8 py-3 text-sm font-medium text-[var(--color-ad-text-muted)] bg-[var(--color-ad-bg)] border border-[var(--color-ad-border)] rounded-md hover:text-white transition-all">
-            Download AgentDock
-          </Link>
+        <div className="bg-[var(--color-ad-surface)] border border-[var(--color-accent-blue-border)] rounded-2xl p-10 md:p-16 text-center relative overflow-hidden group">
+          <div className="absolute inset-0 bg-[url('/grid-texture.svg')] opacity-5 mix-blend-overlay"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-accent-blue-soft)]/20 to-transparent pointer-events-none"></div>
+          
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 relative z-10">Be there when AIgency begins.</h2>
+          <p className="text-[var(--color-ad-text-muted)] text-lg mb-10 max-w-2xl mx-auto relative z-10 leading-relaxed">
+            Join the waitlist for development updates, early-access announcements, and the first opportunity to try AIgency.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10 w-full sm:w-auto">
+            <a 
+              href={WAITLIST_SECTION_URL} 
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById(WAITLIST_SECTION_ID)?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="w-full sm:w-auto px-8 py-3.5 text-sm font-bold text-white bg-[var(--color-accent-purple)] rounded-md hover:bg-[var(--color-accent-purple-hover)] hover:shadow-[0_0_25px_var(--color-accent-purple-glow)] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-purple)] focus:ring-offset-2 focus:ring-offset-[var(--color-ad-surface)]"
+            >
+              Join the AIgency Waitlist
+            </a>
+            <Link to="/aigency/technical" className="w-full sm:w-auto px-8 py-3.5 text-sm font-medium text-[var(--color-accent-blue)] bg-transparent border border-[var(--color-accent-blue-border)] rounded-md hover:bg-[var(--color-accent-blue-soft)] hover:border-[var(--color-accent-blue)] hover:text-white transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-blue)] focus:ring-offset-2 focus:ring-offset-[var(--color-ad-surface)]">
+              Explore Technical Architecture <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
       </motion.section>
     </div>
