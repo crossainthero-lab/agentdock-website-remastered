@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "agdc",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-07-18",
+  "vars": {
+    "ADMIN_EMAIL": "crossainthero@gmail.com"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "agentdock-waitlist",
+      "database_id": "44975e04-d4ff-400c-a4c4-d4102e8d463a",
+      "migrations_dir": "./migrations"
+    }
+  ]
+}
