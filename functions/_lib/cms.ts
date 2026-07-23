@@ -72,39 +72,44 @@ const MERMAID_START_PATTERN =
   /^(flowchart|graph|sequenceDiagram|stateDiagram-v2|stateDiagram|classDiagram|erDiagram|gantt|journey|pie|gitGraph|mindmap|timeline|quadrantChart|requirementDiagram|c4Context|C4Context|sankey-beta|block-beta|packet-beta|xychart-beta|architecture-beta)\b/;
 
 export async function handleLogin(request: Request, env: CmsEnv): Promise<Response> {
-  if (request.method !== "POST") {
-    return jsonError("Method not allowed.", 405);
-  }
+  try {
+    if (request.method !== "POST") {
+      return jsonError("Method not allowed.", 405);
+    }
 
-  if (!env.ADMIN_PASSWORD_HASH || !env.ADMIN_SESSION_SECRET) {
-    return jsonError("Admin authentication is not configured.", 500);
-  }
+    if (!env.ADMIN_PASSWORD_HASH || !env.ADMIN_SESSION_SECRET) {
+      return jsonError("Admin authentication is not configured.", 500);
+    }
 
-  const body = await readJsonBody<{ password?: unknown }>(request);
-  if ("error" in body) {
-    return jsonError(body.error, 400);
-  }
+    const body = await readJsonBody<{ password?: unknown }>(request);
+    if ("error" in body) {
+      return jsonError(body.error, 400);
+    }
 
-  const password = typeof body.value.password === "string" ? body.value.password : "";
-  if (!password) {
-    return jsonError("Password is required.", 400);
-  }
+    const password = typeof body.value.password === "string" ? body.value.password : "";
+    if (!password) {
+      return jsonError("Password is required.", 400);
+    }
 
-  const attemptKey = await loginAttemptKey(request, env.ADMIN_SESSION_SECRET);
-  const lockout = await getLoginLockout(env.WAITLIST_DB, attemptKey);
-  if (lockout.locked) {
-    return jsonError("Too many failed login attempts. Try again later.", 429);
-  }
+    const attemptKey = await loginAttemptKey(request, env.ADMIN_SESSION_SECRET);
+    const lockout = await getLoginLockout(env.WAITLIST_DB, attemptKey);
+    if (lockout.locked) {
+      return jsonError("Too many failed login attempts. Try again later.", 429);
+    }
 
-  const ok = await verifyPasswordHash(password, env.ADMIN_PASSWORD_HASH);
-  if (!ok) {
-    await recordFailedLogin(env.WAITLIST_DB, attemptKey, lockout.failedCount + 1);
-    return jsonError("Invalid password.", 401);
-  }
+    const ok = await verifyPasswordHash(password, env.ADMIN_PASSWORD_HASH);
+    if (!ok) {
+      await recordFailedLogin(env.WAITLIST_DB, attemptKey, lockout.failedCount + 1);
+      return jsonError("Invalid password.", 401);
+    }
 
-  await clearLoginAttempts(env.WAITLIST_DB, attemptKey);
-  const cookie = await createSessionCookie(request, env.ADMIN_SESSION_SECRET);
-  return jsonOk({ authenticated: true }, 200, { "Set-Cookie": cookie });
+    await clearLoginAttempts(env.WAITLIST_DB, attemptKey);
+    const cookie = await createSessionCookie(request, env.ADMIN_SESSION_SECRET);
+    return jsonOk({ authenticated: true }, 200, { "Set-Cookie": cookie });
+  } catch (error) {
+    console.error("Admin login failed", getErrorMessage(error));
+    return jsonError("Login failed. Try again.", 500);
+  }
 }
 
 export async function handleLogout(request: Request): Promise<Response> {
@@ -747,28 +752,53 @@ async function verifySessionCookie(cookie: string, secret: string): Promise<bool
 }
 
 async function verifyPasswordHash(password: string, passwordHash: string): Promise<boolean> {
-  const [algorithm, iterationsValue, saltValue, expectedValue] = passwordHash.split("$");
+  const [algorithm, firstValue, secondValue, thirdValue] = passwordHash.split("$");
+  if (algorithm === "sha256") {
+    if (!firstValue || !secondValue) {
+      return false;
+    }
+
+    const salt = base64UrlDecode(firstValue);
+    const expected = base64UrlDecode(secondValue);
+    const derived = await sha256PasswordDigest(password, salt);
+    return constantTimeBytesEqual(derived, expected);
+  }
+
   if (algorithm !== "pbkdf2-sha256") {
     return false;
   }
 
-  const iterations = Number(iterationsValue);
-  if (!Number.isInteger(iterations) || iterations < 100_000 || !saltValue || !expectedValue) {
+  const iterations = Number(firstValue);
+  if (!Number.isInteger(iterations) || iterations < 100_000 || !secondValue || !thirdValue) {
     return false;
   }
 
-  const salt = base64UrlDecode(saltValue);
-  const expected = base64UrlDecode(expectedValue);
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, [
-    "deriveBits",
-  ]);
-  const derived = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt, iterations },
-    key,
-    expected.byteLength * 8,
-  );
+  try {
+    const salt = base64UrlDecode(secondValue);
+    const expected = base64UrlDecode(thirdValue);
+    const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, [
+      "deriveBits",
+    ]);
+    const derived = await crypto.subtle.deriveBits(
+      { name: "PBKDF2", hash: "SHA-256", salt, iterations },
+      key,
+      expected.byteLength * 8,
+    );
 
-  return constantTimeBytesEqual(new Uint8Array(derived), expected);
+    return constantTimeBytesEqual(new Uint8Array(derived), expected);
+  } catch {
+    return false;
+  }
+}
+
+async function sha256PasswordDigest(password: string, salt: Uint8Array): Promise<Uint8Array> {
+  const passwordBytes = new TextEncoder().encode(password);
+  const data = new Uint8Array(salt.byteLength + 1 + passwordBytes.byteLength);
+  data.set(salt, 0);
+  data.set([0], salt.byteLength);
+  data.set(passwordBytes, salt.byteLength + 1);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return new Uint8Array(digest);
 }
 
 async function loginAttemptKey(request: Request, secret: string): Promise<string> {
@@ -862,6 +892,10 @@ function responseHeaders(headers?: HeadersInit): HeadersInit {
     "X-Content-Type-Options": "nosniff",
     ...(headers ?? {}),
   };
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unknown error";
 }
 
 function base64UrlEncode(bytes: Uint8Array): string {

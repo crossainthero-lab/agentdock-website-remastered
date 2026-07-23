@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { pbkdf2Sync, randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import {
   createPost,
@@ -279,10 +279,9 @@ class MockCmsDb implements CmsDatabase {
 }
 
 function passwordHash(password: string) {
-  const iterations = 210_000;
   const salt = randomBytes(16);
-  const hash = pbkdf2Sync(password, salt, iterations, 32, "sha256");
-  return `pbkdf2-sha256$${iterations}$${salt.toString("base64url")}$${hash.toString("base64url")}`;
+  const hash = createHash("sha256").update(salt).update("\0").update(password).digest();
+  return `sha256$${salt.toString("base64url")}$${hash.toString("base64url")}`;
 }
 
 function jsonRequest(url: string, body: unknown, cookie?: string) {

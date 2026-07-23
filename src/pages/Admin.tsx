@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import mermaid from 'mermaid';
 import {
@@ -13,9 +13,11 @@ import {
   Eye,
   EyeOff,
   RotateCcw,
+  Upload,
 } from 'lucide-react';
 import { Mermaid } from '../components/Mermaid';
 import { MarkdownContent } from '../components/MarkdownContent';
+import { parseMarkdownImport, slugify } from '../lib/contentImport';
 import type {
   ApiResponse,
   BlogPost,
@@ -387,6 +389,24 @@ function BlogEditor({
   onTitleChange: (title: string) => void;
 }) {
   const publishedSlugChanged = selectedPost?.status === 'published' && selectedPost.slug !== draft.slug;
+  const [importError, setImportError] = useState('');
+
+  const importMarkdown = async (file: File) => {
+    try {
+      const imported = parseMarkdownImport(await readTextFile(file), file.name);
+      onChange({
+        title: draft.title || imported.title || '',
+        slug: draft.slug || suggestSlug(imported.slug ?? imported.title ?? ''),
+        description: draft.description || imported.description || '',
+        category: draft.category || imported.category || '',
+        coverImage: draft.coverImage || imported.coverImage || '',
+        contentMarkdown: imported.markdown,
+      });
+      setImportError('');
+    } catch (error) {
+      setImportError(getErrorMessage(error));
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -409,7 +429,12 @@ function BlogEditor({
         </AdminField>
       </div>
       <AdminField label="Markdown content">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-[var(--color-ad-text-muted)]">Import a `.md` or `.markdown` file. Front matter can set title, slug, description, category, and cover image.</p>
+          <FileImportButton accept=".md,.markdown,.txt,text/markdown,text/plain" label="Import Markdown" onFile={importMarkdown} />
+        </div>
         <textarea value={draft.contentMarkdown} onChange={(event) => onChange({ contentMarkdown: event.target.value })} className="admin-textarea min-h-[28rem] font-mono text-sm" />
+        {importError && <p className="mt-2 rounded-md border border-[var(--color-accent-amber-border)] bg-[var(--color-accent-amber-soft)] px-3 py-2 text-xs text-[var(--color-accent-amber)]">{importError}</p>}
       </AdminField>
     </div>
   );
@@ -439,6 +464,7 @@ function TechnicalAdmin({ onMessage }: { onMessage: (message: string) => void })
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [diagramError, setDiagramError] = useState('');
+  const [importError, setImportError] = useState('');
   const selectedSection = sections.find((section) => section.id === selectedId);
   const isNew = selectedId === 'new';
   const isDirty = JSON.stringify(draft) !== loadedSnapshot;
@@ -470,6 +496,7 @@ function TechnicalAdmin({ onMessage }: { onMessage: (message: string) => void })
     setLoadedSnapshot(JSON.stringify(nextDraft));
     setError('');
     setDiagramError('');
+    setImportError('');
   };
 
   const createNew = () => {
@@ -480,6 +507,7 @@ function TechnicalAdmin({ onMessage }: { onMessage: (message: string) => void })
     setLoadedSnapshot(JSON.stringify(nextDraft));
     setError('');
     setDiagramError('');
+    setImportError('');
   };
 
   const updateDraft = (patch: Partial<TechnicalSectionInput>) => {
@@ -499,6 +527,40 @@ function TechnicalAdmin({ onMessage }: { onMessage: (message: string) => void })
     } catch (err) {
       setDiagramError(err instanceof Error ? err.message : 'Mermaid syntax could not be parsed.');
       return false;
+    }
+  };
+
+  const importMarkdown = async (file: File) => {
+    try {
+      const imported = parseMarkdownImport(await readTextFile(file), file.name, { extractMermaid: true });
+      updateDraft({
+        title: draft.title || imported.title || '',
+        sectionKey: draft.sectionKey || suggestSlug(imported.slug ?? imported.title ?? ''),
+        contentMarkdown: imported.markdown,
+        mermaidSource: imported.mermaidSource ?? draft.mermaidSource ?? '',
+      });
+
+      if (imported.mermaidSource) {
+        const mermaidImportError = await validateMermaidText(imported.mermaidSource);
+        setDiagramError(mermaidImportError);
+      } else {
+        setDiagramError('');
+      }
+
+      setImportError('');
+    } catch (error) {
+      setImportError(getErrorMessage(error));
+    }
+  };
+
+  const importMermaid = async (file: File) => {
+    try {
+      const source = await readTextFile(file);
+      updateDraft({ mermaidSource: source.trim() });
+      setDiagramError(await validateMermaidText(source));
+      setImportError('');
+    } catch (error) {
+      setImportError(getErrorMessage(error));
     }
   };
 
@@ -584,6 +646,16 @@ function TechnicalAdmin({ onMessage }: { onMessage: (message: string) => void })
           <div className="grid 2xl:grid-cols-2 gap-6">
             <EditorPanel title={isNew ? 'Create section' : 'Edit section'}>
               <div className="space-y-4">
+                <div className="rounded-md border border-[var(--color-ad-border)] bg-[var(--color-ad-bg)] p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs text-[var(--color-ad-text-muted)]">Import one section from Markdown, or import a separate Mermaid file into the diagram field.</p>
+                    <div className="flex flex-wrap gap-2">
+                      <FileImportButton accept=".md,.markdown,.txt,text/markdown,text/plain" label="Import Markdown" onFile={importMarkdown} />
+                      <FileImportButton accept=".mmd,.mermaid,.txt,text/plain" label="Import Mermaid" onFile={importMermaid} />
+                    </div>
+                  </div>
+                  {importError && <p className="mt-2 rounded-md border border-[var(--color-accent-amber-border)] bg-[var(--color-accent-amber-soft)] px-3 py-2 text-xs text-[var(--color-accent-amber)]">{importError}</p>}
+                </div>
                 <AdminField label="Section key">
                   <input value={draft.sectionKey} onChange={(event) => updateDraft({ sectionKey: suggestSlug(event.target.value) })} className="admin-input font-mono" />
                 </AdminField>
@@ -658,6 +730,50 @@ function AdminField({ label, children }: { label: string; children: ReactNode })
   );
 }
 
+function FileImportButton({
+  accept,
+  label,
+  onFile,
+}: {
+  accept: string;
+  label: string;
+  onFile: (file: File) => Promise<void>;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleFile = async (file: File | undefined) => {
+    if (!file) {
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      await onFile(file);
+    } finally {
+      setIsImporting(false);
+      if (inputRef.current) {
+        inputRef.current.value = '';
+      }
+    }
+  };
+
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={(event) => void handleFile(event.target.files?.[0])}
+      />
+      <button type="button" disabled={isImporting} onClick={() => inputRef.current?.click()} className="admin-mini-button">
+        <Upload className="w-3.5 h-3.5" /> {isImporting ? 'Importing...' : label}
+      </button>
+    </>
+  );
+}
+
 function AdminError({ error }: { error: string }) {
   return (
     <div className="mb-5 rounded-md border border-[var(--color-accent-amber-border)] bg-[var(--color-accent-amber-soft)] px-4 py-3 text-sm text-[var(--color-accent-amber)]">
@@ -716,13 +832,33 @@ async function apiRequest<T>(url: string, init?: { method?: string; body?: unkno
 }
 
 function suggestSlug(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/['"]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .replace(/-{2,}/g, '-');
+  return slugify(value);
+}
+
+async function readTextFile(file: File): Promise<string> {
+  if (file.size > 512 * 1024) {
+    throw new Error('Imported files must be 512 KB or smaller.');
+  }
+
+  return file.text();
+}
+
+async function validateMermaidText(source: string): Promise<string> {
+  const trimmed = source.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  try {
+    await mermaid.parse(trimmed);
+    return '';
+  } catch (error) {
+    return getErrorMessage(error) || 'Mermaid syntax could not be parsed.';
+  }
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Import failed.';
 }
 
 function formatDate(value: string): string {
