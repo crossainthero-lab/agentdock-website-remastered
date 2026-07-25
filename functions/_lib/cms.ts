@@ -4,12 +4,19 @@ import type {
   BlogPost,
   BlogPostInput,
   BlogPostStatus,
+  LegacyReleaseAsset,
+  PlatformRelease,
+  PlatformStatusLabel,
+  ReleaseManagement,
+  ReleasePlatformKey,
+  ReleaseSettings,
   BlogPostSummary,
   SiteAnnouncement,
   SiteAnnouncementInput,
   TechnicalSection,
   TechnicalSectionInput,
 } from "../../src/types/cms";
+import { fallbackReleaseData } from "../../src/config/downloads";
 
 export interface D1ResultLike<T = Record<string, unknown>> {
   results: T[];
@@ -29,6 +36,7 @@ export interface D1PreparedStatementLike {
 
 export interface CmsDatabase {
   prepare(query: string): D1PreparedStatementLike;
+  batch?<T = Record<string, unknown>>(statements: D1PreparedStatementLike[]): Promise<D1ResultLike<T>[]>;
 }
 
 export interface CmsEnv {
@@ -69,6 +77,47 @@ type SiteSettingsRow = {
   updated_at: string;
 };
 
+type ReleaseSettingsRow = {
+  main_heading: string;
+  main_description: string;
+  latest_version: string;
+  github_releases_url: string;
+  show_legacy_releases: number;
+  announcement: string;
+  updated_at: string;
+};
+
+type PlatformReleaseRow = {
+  platform_key: ReleasePlatformKey;
+  display_name: string;
+  current_version: string;
+  is_available: number;
+  primary_download_url: string;
+  primary_button_label: string;
+  secondary_download_url: string;
+  secondary_button_label: string;
+  status_label: PlatformStatusLabel;
+  release_note: string;
+  release_date: string | null;
+  display_order: number;
+  is_visible: number;
+  updated_at: string;
+};
+
+type LegacyReleaseRow = {
+  id: number;
+  version: string;
+  platform: string;
+  title: string;
+  url: string;
+  button_label: string;
+  release_notes_url: string;
+  file_type: string;
+  arch: string;
+  display_order: number;
+  is_visible: number;
+};
+
 const MAX_JSON_BYTES = 256 * 1024;
 const SESSION_COOKIE_NAME = "admin_session";
 const SESSION_MAX_AGE_SECONDS = 8 * 60 * 60;
@@ -78,6 +127,11 @@ const ANNOUNCEMENT_SETTING_KEY = "announcement_bar";
 const MAX_ANNOUNCEMENT_TEXT_LENGTH = 220;
 const MAX_ANNOUNCEMENT_LINK_TEXT_LENGTH = 60;
 const MAX_ANNOUNCEMENT_LINK_URL_LENGTH = 500;
+const MAX_RELEASE_TEXT_LENGTH = 500;
+const MAX_RELEASE_NOTE_LENGTH = 300;
+const MAX_RELEASE_URL_LENGTH = 1000;
+const PLATFORM_KEYS: ReleasePlatformKey[] = ["windows", "macos", "linux"];
+const STATUS_LABELS: PlatformStatusLabel[] = ["Available", "Experimental", "Coming Soon", "Legacy"];
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const SECTION_KEY_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const MERMAID_START_PATTERN =
@@ -480,6 +534,220 @@ export async function updateAnnouncementSettings(db: CmsDatabase, rawInput: unkn
   }
 }
 
+export async function getReleaseManagement(
+  db: CmsDatabase,
+  options: { includeHidden: boolean } = { includeHidden: false },
+): Promise<ReleaseManagement> {
+  try {
+    const settingsRow = await db
+      .prepare(
+        `SELECT main_heading,
+                main_description,
+                latest_version,
+                github_releases_url,
+                show_legacy_releases,
+                announcement,
+                updated_at
+         FROM release_settings
+         WHERE id = 1
+         LIMIT 1`,
+      )
+      .first<ReleaseSettingsRow>();
+
+    const platformQuery = options.includeHidden
+      ? `SELECT platform_key,
+                display_name,
+                current_version,
+                is_available,
+                primary_download_url,
+                primary_button_label,
+                secondary_download_url,
+                secondary_button_label,
+                status_label,
+                release_note,
+                release_date,
+                display_order,
+                is_visible,
+                updated_at
+         FROM platform_releases
+         ORDER BY display_order ASC, platform_key ASC`
+      : `SELECT platform_key,
+                display_name,
+                current_version,
+                is_available,
+                primary_download_url,
+                primary_button_label,
+                secondary_download_url,
+                secondary_button_label,
+                status_label,
+                release_note,
+                release_date,
+                display_order,
+                is_visible,
+                updated_at
+         FROM platform_releases
+         WHERE is_visible = 1
+         ORDER BY display_order ASC, platform_key ASC`;
+
+    const { results: platformRows } = await db.prepare(platformQuery).all<PlatformReleaseRow>();
+    const legacyQuery = options.includeHidden
+      ? `SELECT id, version, platform, title, url, button_label, release_notes_url, file_type, arch, display_order, is_visible
+         FROM legacy_releases
+         ORDER BY version DESC, display_order ASC, id ASC`
+      : `SELECT id, version, platform, title, url, button_label, release_notes_url, file_type, arch, display_order, is_visible
+         FROM legacy_releases
+         WHERE is_visible = 1
+         ORDER BY version DESC, display_order ASC, id ASC`;
+    const { results: legacyRows } = await db.prepare(legacyQuery).all<LegacyReleaseRow>();
+
+    const settings = settingsRow ? mapReleaseSettings(settingsRow) : fallbackReleaseData.settings;
+    const platforms = platformRows.length > 0
+      ? platformRows.map(mapPlatformRelease).filter((platform) => isSafePlatformRelease(platform, options.includeHidden))
+      : filterFallbackPlatforms(options.includeHidden);
+    const legacyReleases = settings.showLegacyReleases
+      ? (legacyRows.length > 0 ? legacyRows.map(mapLegacyRelease).filter((asset) => isSafeLegacyRelease(asset, options.includeHidden)) : fallbackReleaseData.legacyReleases)
+      : [];
+
+    return {
+      settings,
+      platforms,
+      legacyReleases,
+    };
+  } catch (error) {
+    if (isMissingReleaseManagementError(error)) {
+      return {
+        ...fallbackReleaseData,
+        platforms: filterFallbackPlatforms(options.includeHidden),
+      };
+    }
+
+    throw error;
+  }
+}
+
+export async function getPublicReleaseManagement(db: CmsDatabase): Promise<ReleaseManagement> {
+  try {
+    return await getReleaseManagement(db, { includeHidden: false });
+  } catch (error) {
+    console.error("Public release data read failed", getErrorMessage(error));
+    return {
+      ...fallbackReleaseData,
+      platforms: filterFallbackPlatforms(false),
+    };
+  }
+}
+
+export async function updateReleaseManagement(db: CmsDatabase, rawInput: unknown): Promise<Response> {
+  const validation = validateReleaseManagementInput(rawInput);
+  if ("error" in validation) {
+    return jsonError(validation.error, 400);
+  }
+
+  const input = validation.value;
+  const statements = [
+    db
+      .prepare(
+        `INSERT INTO release_settings (
+           id,
+           main_heading,
+           main_description,
+           latest_version,
+           github_releases_url,
+           show_legacy_releases,
+           announcement,
+           updated_at
+         )
+         VALUES (1, ?1, ?2, ?3, ?4, ?5, ?6, CURRENT_TIMESTAMP)
+         ON CONFLICT(id) DO UPDATE SET
+           main_heading = excluded.main_heading,
+           main_description = excluded.main_description,
+           latest_version = excluded.latest_version,
+           github_releases_url = excluded.github_releases_url,
+           show_legacy_releases = excluded.show_legacy_releases,
+           announcement = excluded.announcement,
+           updated_at = CURRENT_TIMESTAMP`,
+      )
+      .bind(
+        input.settings.mainHeading,
+        input.settings.mainDescription,
+        input.settings.latestVersion,
+        input.settings.githubReleasesUrl,
+        input.settings.showLegacyReleases ? 1 : 0,
+        input.settings.announcement,
+      ),
+    ...input.platforms.map((platform) =>
+      db
+        .prepare(
+          `INSERT INTO platform_releases (
+             platform_key,
+             display_name,
+             current_version,
+             is_available,
+             primary_download_url,
+             primary_button_label,
+             secondary_download_url,
+             secondary_button_label,
+             status_label,
+             release_note,
+             release_date,
+             display_order,
+             is_visible,
+             updated_at
+           )
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, CURRENT_TIMESTAMP)
+           ON CONFLICT(platform_key) DO UPDATE SET
+             display_name = excluded.display_name,
+             current_version = excluded.current_version,
+             is_available = excluded.is_available,
+             primary_download_url = excluded.primary_download_url,
+             primary_button_label = excluded.primary_button_label,
+             secondary_download_url = excluded.secondary_download_url,
+             secondary_button_label = excluded.secondary_button_label,
+             status_label = excluded.status_label,
+             release_note = excluded.release_note,
+             release_date = excluded.release_date,
+             display_order = excluded.display_order,
+             is_visible = excluded.is_visible,
+             updated_at = CURRENT_TIMESTAMP`,
+        )
+        .bind(
+          platform.platformKey,
+          platform.displayName,
+          platform.currentVersion,
+          platform.isAvailable ? 1 : 0,
+          platform.primaryDownloadUrl,
+          platform.primaryButtonLabel,
+          platform.secondaryDownloadUrl,
+          platform.secondaryButtonLabel,
+          platform.statusLabel,
+          platform.releaseNote,
+          platform.releaseDate,
+          platform.displayOrder,
+          platform.isVisible ? 1 : 0,
+        ),
+    ),
+  ];
+
+  try {
+    if (db.batch) {
+      await db.batch(statements);
+    } else {
+      for (const statement of statements) {
+        await statement.run();
+      }
+    }
+
+    return jsonOk(await getReleaseManagement(db, { includeHidden: true }), 200, undefined, "Release settings saved.");
+  } catch (error) {
+    if (isMissingReleaseManagementError(error)) {
+      return jsonError("Release management migration has not been applied.", 500);
+    }
+
+    console.error("Release management update failed", { message: getErrorMessage(error) });
+    return jsonError("Release settings could not be saved.", 500);
+  }
+}
+
 export async function readJsonBody<T = unknown>(
   request: Request,
 ): Promise<{ value: T } | { error: string }> {
@@ -741,6 +1009,207 @@ function validateAnnouncementInput(rawInput: unknown): { value: Required<SiteAnn
   };
 }
 
+function validateReleaseManagementInput(rawInput: unknown): { value: ReleaseManagement } | { error: string } {
+  if (!rawInput || typeof rawInput !== "object" || Array.isArray(rawInput)) {
+    return { error: "Release management payload must be an object." };
+  }
+
+  const input = rawInput as Record<string, unknown>;
+  const settingsValidation = validateReleaseSettingsInput(input.settings);
+  if ("error" in settingsValidation) {
+    return settingsValidation;
+  }
+
+  if (!Array.isArray(input.platforms)) {
+    return { error: "Platform releases must be an array." };
+  }
+
+  const seen = new Set<string>();
+  const platforms: PlatformRelease[] = [];
+  for (const rawPlatform of input.platforms) {
+    const platformValidation = validatePlatformReleaseInput(rawPlatform);
+    if ("error" in platformValidation) {
+      return platformValidation;
+    }
+
+    if (seen.has(platformValidation.value.platformKey)) {
+      return { error: "Each platform can only appear once." };
+    }
+
+    seen.add(platformValidation.value.platformKey);
+    platforms.push(platformValidation.value);
+  }
+
+  const missingPlatform = PLATFORM_KEYS.find((platformKey) => !seen.has(platformKey));
+  if (missingPlatform) {
+    return { error: `Missing release settings for ${missingPlatform}.` };
+  }
+
+  return {
+    value: {
+      settings: settingsValidation.value,
+      platforms: platforms.sort((a, b) => a.displayOrder - b.displayOrder || a.platformKey.localeCompare(b.platformKey)),
+      legacyReleases: [],
+    },
+  };
+}
+
+function validateReleaseSettingsInput(rawInput: unknown): { value: ReleaseSettings } | { error: string } {
+  if (!rawInput || typeof rawInput !== "object" || Array.isArray(rawInput)) {
+    return { error: "General release settings must be an object." };
+  }
+
+  const input = rawInput as Record<string, unknown>;
+  const mainHeading = normalizeString(input.mainHeading);
+  const mainDescription = normalizeString(input.mainDescription);
+  const latestVersion = normalizeString(input.latestVersion);
+  const githubReleasesUrl = normalizeString(input.githubReleasesUrl);
+  const announcement = normalizeString(input.announcement);
+
+  if (!mainHeading || mainHeading.length > 120) {
+    return { error: "Main release heading is required and must be 120 characters or fewer." };
+  }
+
+  if (!mainDescription || mainDescription.length > MAX_RELEASE_TEXT_LENGTH) {
+    return { error: `Main release description is required and must be ${MAX_RELEASE_TEXT_LENGTH} characters or fewer.` };
+  }
+
+  if (!latestVersion || latestVersion.length > 40) {
+    return { error: "Latest overall version is required and must be 40 characters or fewer." };
+  }
+
+  const githubUrlError = validateHttpsUrl(githubReleasesUrl, "GitHub releases page URL");
+  if (githubUrlError) {
+    return { error: githubUrlError };
+  }
+
+  if (input.showLegacyReleases !== true && input.showLegacyReleases !== false) {
+    return { error: "Show legacy releases must be true or false." };
+  }
+
+  if (announcement.length > MAX_RELEASE_TEXT_LENGTH) {
+    return { error: `Release announcement must be ${MAX_RELEASE_TEXT_LENGTH} characters or fewer.` };
+  }
+
+  return {
+    value: {
+      mainHeading,
+      mainDescription,
+      latestVersion,
+      githubReleasesUrl,
+      showLegacyReleases: input.showLegacyReleases === true,
+      announcement,
+      updatedAt: normalizeNullableString(input.updatedAt),
+    },
+  };
+}
+
+function validatePlatformReleaseInput(rawInput: unknown): { value: PlatformRelease } | { error: string } {
+  if (!rawInput || typeof rawInput !== "object" || Array.isArray(rawInput)) {
+    return { error: "Platform release payload must be an object." };
+  }
+
+  const input = rawInput as Record<string, unknown>;
+  const platformKey = normalizeString(input.platformKey) as ReleasePlatformKey;
+  const displayName = normalizeString(input.displayName);
+  const currentVersion = normalizeString(input.currentVersion);
+  const primaryDownloadUrl = normalizeString(input.primaryDownloadUrl);
+  const primaryButtonLabel = normalizeString(input.primaryButtonLabel);
+  const secondaryDownloadUrl = normalizeString(input.secondaryDownloadUrl);
+  const secondaryButtonLabel = normalizeString(input.secondaryButtonLabel);
+  const statusLabel = normalizeString(input.statusLabel) as PlatformStatusLabel;
+  const releaseNote = normalizeString(input.releaseNote);
+  const releaseDate = normalizeNullableString(input.releaseDate);
+  const displayOrder = Number(input.displayOrder);
+  const isAvailable = input.isAvailable === true;
+  const isVisible = input.isVisible === true;
+
+  if (!PLATFORM_KEYS.includes(platformKey)) {
+    return { error: "Platform key must be windows, macos, or linux." };
+  }
+
+  if (!displayName || displayName.length > 80) {
+    return { error: `${platformKey} display name is required and must be 80 characters or fewer.` };
+  }
+
+  if (input.isAvailable !== true && input.isAvailable !== false) {
+    return { error: `${displayName} availability must be true or false.` };
+  }
+
+  if (input.isVisible !== true && input.isVisible !== false) {
+    return { error: `${displayName} public visibility must be true or false.` };
+  }
+
+  if (isAvailable && !currentVersion) {
+    return { error: `${displayName} version is required when the platform is available.` };
+  }
+
+  if (currentVersion.length > 40) {
+    return { error: `${displayName} version must be 40 characters or fewer.` };
+  }
+
+  if (!STATUS_LABELS.includes(statusLabel)) {
+    return { error: `${displayName} status label is not valid.` };
+  }
+
+  if (isAvailable && !primaryDownloadUrl) {
+    return { error: `${displayName} primary download URL is required when the platform is available.` };
+  }
+
+  const primaryUrlError = validateOptionalHttpsUrl(primaryDownloadUrl, `${displayName} primary download URL`);
+  if (primaryUrlError) {
+    return { error: primaryUrlError };
+  }
+
+  const secondaryUrlError = validateOptionalHttpsUrl(secondaryDownloadUrl, `${displayName} secondary download URL`);
+  if (secondaryUrlError) {
+    return { error: secondaryUrlError };
+  }
+
+  if ((isAvailable || primaryDownloadUrl) && (!primaryButtonLabel || primaryButtonLabel.length > 60)) {
+    return { error: `${displayName} primary button label is required and must be 60 characters or fewer.` };
+  }
+
+  if (secondaryDownloadUrl && (!secondaryButtonLabel || secondaryButtonLabel.length > 60)) {
+    return { error: `${displayName} secondary button label is required when a secondary URL is set.` };
+  }
+
+  if (secondaryButtonLabel.length > 60) {
+    return { error: `${displayName} secondary button label must be 60 characters or fewer.` };
+  }
+
+  if (releaseNote.length > MAX_RELEASE_NOTE_LENGTH) {
+    return { error: `${displayName} release note must be ${MAX_RELEASE_NOTE_LENGTH} characters or fewer.` };
+  }
+
+  if (releaseDate && !isValidDateOnly(releaseDate)) {
+    return { error: `${displayName} release date must use YYYY-MM-DD format.` };
+  }
+
+  if (!Number.isInteger(displayOrder) || displayOrder < -1_000_000 || displayOrder > 1_000_000) {
+    return { error: `${displayName} display order must be an integer.` };
+  }
+
+  return {
+    value: {
+      platformKey,
+      displayName,
+      currentVersion,
+      isAvailable,
+      primaryDownloadUrl,
+      primaryButtonLabel,
+      secondaryDownloadUrl,
+      secondaryButtonLabel: secondaryDownloadUrl ? secondaryButtonLabel : "",
+      statusLabel,
+      releaseNote,
+      releaseDate,
+      displayOrder,
+      isVisible,
+      updatedAt: normalizeNullableString(input.updatedAt),
+    },
+  };
+}
+
 async function getPostBySlug(db: CmsDatabase, slug: string): Promise<BlogPost | null> {
   const row = await db
     .prepare(
@@ -828,6 +1297,85 @@ function mapAnnouncementSetting(row: SiteSettingsRow): SiteAnnouncement {
   }
 }
 
+function mapReleaseSettings(row: ReleaseSettingsRow): ReleaseSettings {
+  const githubReleasesUrl = normalizeString(row.github_releases_url);
+  return {
+    mainHeading: normalizeString(row.main_heading) || fallbackReleaseData.settings.mainHeading,
+    mainDescription: normalizeString(row.main_description) || fallbackReleaseData.settings.mainDescription,
+    latestVersion: normalizeString(row.latest_version) || fallbackReleaseData.settings.latestVersion,
+    githubReleasesUrl: validateOptionalHttpsUrl(githubReleasesUrl, "GitHub releases page URL")
+      ? fallbackReleaseData.settings.githubReleasesUrl
+      : githubReleasesUrl,
+    showLegacyReleases: row.show_legacy_releases === 1,
+    announcement: normalizeString(row.announcement).slice(0, MAX_RELEASE_TEXT_LENGTH),
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapPlatformRelease(row: PlatformReleaseRow): PlatformRelease {
+  const primaryDownloadUrl = normalizeString(row.primary_download_url);
+  const secondaryDownloadUrl = normalizeString(row.secondary_download_url);
+  const statusLabel = STATUS_LABELS.includes(row.status_label) ? row.status_label : "Coming Soon";
+
+  return {
+    platformKey: row.platform_key,
+    displayName: normalizeString(row.display_name),
+    currentVersion: normalizeString(row.current_version),
+    isAvailable: row.is_available === 1,
+    primaryDownloadUrl: validateOptionalHttpsUrl(primaryDownloadUrl, "Primary download URL") ? "" : primaryDownloadUrl,
+    primaryButtonLabel: normalizeString(row.primary_button_label),
+    secondaryDownloadUrl: validateOptionalHttpsUrl(secondaryDownloadUrl, "Secondary download URL") ? "" : secondaryDownloadUrl,
+    secondaryButtonLabel: normalizeString(row.secondary_button_label),
+    statusLabel,
+    releaseNote: normalizeString(row.release_note).slice(0, MAX_RELEASE_NOTE_LENGTH),
+    releaseDate: row.release_date && isValidDateOnly(row.release_date) ? row.release_date : null,
+    displayOrder: Number.isFinite(row.display_order) ? row.display_order : 0,
+    isVisible: row.is_visible === 1,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapLegacyRelease(row: LegacyReleaseRow): LegacyReleaseAsset {
+  const url = normalizeString(row.url);
+  const releaseNotesUrl = normalizeString(row.release_notes_url);
+
+  return {
+    id: row.id,
+    version: normalizeString(row.version),
+    platform: normalizeString(row.platform),
+    title: normalizeString(row.title),
+    url: validateOptionalHttpsUrl(url, "Legacy download URL") ? "" : url,
+    buttonLabel: normalizeString(row.button_label) || "Download",
+    releaseNotesUrl: validateOptionalHttpsUrl(releaseNotesUrl, "Legacy release notes URL") ? "" : releaseNotesUrl,
+    fileType: normalizeString(row.file_type),
+    arch: normalizeString(row.arch),
+    displayOrder: Number.isFinite(row.display_order) ? row.display_order : 0,
+    isVisible: row.is_visible === 1,
+  };
+}
+
+function isSafePlatformRelease(platform: PlatformRelease, includeHidden: boolean): boolean {
+  if ((!includeHidden && !platform.isVisible) || !PLATFORM_KEYS.includes(platform.platformKey) || !platform.displayName) {
+    return false;
+  }
+
+  if (!platform.isAvailable) {
+    return true;
+  }
+
+  return Boolean(platform.currentVersion && platform.primaryDownloadUrl && platform.primaryButtonLabel);
+}
+
+function isSafeLegacyRelease(asset: LegacyReleaseAsset, includeHidden: boolean): boolean {
+  return Boolean((includeHidden || asset.isVisible) && asset.version && asset.title && asset.url);
+}
+
+function filterFallbackPlatforms(includeHidden: boolean): PlatformRelease[] {
+  return fallbackReleaseData.platforms
+    .filter((platform) => includeHidden || platform.isVisible)
+    .sort((a, b) => a.displayOrder - b.displayOrder || a.platformKey.localeCompare(b.platformKey));
+}
+
 function mapDatabaseWriteError(error: unknown, fallback: string): Response {
   const message = error instanceof Error ? error.message : "";
   if (/unique|constraint/i.test(message)) {
@@ -862,6 +1410,39 @@ function validateAnnouncementUrl(value: string): string | null {
   }
 }
 
+function validateOptionalHttpsUrl(value: string, label: string): string | null {
+  if (!value) {
+    return null;
+  }
+
+  if (value.length > MAX_RELEASE_URL_LENGTH) {
+    return `${label} must be ${MAX_RELEASE_URL_LENGTH} characters or fewer.`;
+  }
+
+  return validateHttpsUrl(value, label);
+}
+
+function validateHttpsUrl(value: string, label: string): string | null {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:") {
+      return `${label} must be a valid https:// URL.`;
+    }
+    return null;
+  } catch {
+    return `${label} must be a valid https:// URL.`;
+  }
+}
+
+function isValidDateOnly(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const parsed = Date.parse(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(parsed) && new Date(parsed).toISOString().startsWith(value);
+}
+
 function validateCoverImage(value: string): string | null {
   if (!value) {
     return null;
@@ -888,6 +1469,10 @@ function validateCoverImage(value: string): string | null {
 
 function isMissingSiteSettingsError(error: unknown): boolean {
   return /no such table: site_settings/i.test(getErrorMessage(error));
+}
+
+function isMissingReleaseManagementError(error: unknown): boolean {
+  return /no such table: (release_settings|platform_releases|legacy_releases)/i.test(getErrorMessage(error));
 }
 
 async function createSessionCookie(request: Request, secret: string): Promise<string> {

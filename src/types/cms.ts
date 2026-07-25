@@ -72,6 +72,56 @@ export interface SiteAnnouncementInput {
   updatedAt?: string | null;
 }
 
+export type ReleasePlatformKey = "windows" | "macos" | "linux";
+export type PlatformStatusLabel = "Available" | "Experimental" | "Coming Soon" | "Legacy";
+
+export interface ReleaseSettings {
+  mainHeading: string;
+  mainDescription: string;
+  latestVersion: string;
+  githubReleasesUrl: string;
+  showLegacyReleases: boolean;
+  announcement: string;
+  updatedAt: string | null;
+}
+
+export interface PlatformRelease {
+  platformKey: ReleasePlatformKey;
+  displayName: string;
+  currentVersion: string;
+  isAvailable: boolean;
+  primaryDownloadUrl: string;
+  primaryButtonLabel: string;
+  secondaryDownloadUrl: string;
+  secondaryButtonLabel: string;
+  statusLabel: PlatformStatusLabel;
+  releaseNote: string;
+  releaseDate: string | null;
+  displayOrder: number;
+  isVisible: boolean;
+  updatedAt: string | null;
+}
+
+export interface LegacyReleaseAsset {
+  id: number;
+  version: string;
+  platform: string;
+  title: string;
+  url: string;
+  buttonLabel: string;
+  releaseNotesUrl: string;
+  fileType: string;
+  arch: string;
+  displayOrder: number;
+  isVisible: boolean;
+}
+
+export interface ReleaseManagement {
+  settings: ReleaseSettings;
+  platforms: PlatformRelease[];
+  legacyReleases: LegacyReleaseAsset[];
+}
+
 export interface ApiErrorResponse {
   ok: false;
   error: string;

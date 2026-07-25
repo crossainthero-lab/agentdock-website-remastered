@@ -12,6 +12,7 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  Download,
   Megaphone,
   RotateCcw,
   Upload,
@@ -19,19 +20,23 @@ import {
 import { AnnouncementBar } from '../components/AnnouncementBar';
 import { Mermaid } from '../components/Mermaid';
 import { MarkdownContent } from '../components/MarkdownContent';
+import { fallbackReleaseData } from '../config/downloads';
 import { parseMarkdownImport, slugify } from '../lib/contentImport';
 import type {
   ApiResponse,
   BlogPost,
   BlogPostInput,
   BlogPostStatus,
+  PlatformRelease,
+  PlatformStatusLabel,
+  ReleaseManagement,
   SiteAnnouncement,
   SiteAnnouncementInput,
   TechnicalSection,
   TechnicalSectionInput,
 } from '../types/cms';
 
-type AdminView = 'dashboard' | 'announcement' | 'blog' | 'technical';
+type AdminView = 'dashboard' | 'announcement' | 'releases' | 'blog' | 'technical';
 
 const emptyBlogDraft: BlogPostInput = {
   title: '',
@@ -60,6 +65,8 @@ const emptyAnnouncementDraft: SiteAnnouncementInput = {
   linkUrl: '',
   updatedAt: null,
 };
+
+const statusLabels: PlatformStatusLabel[] = ['Available', 'Experimental', 'Coming Soon', 'Legacy'];
 
 export function Admin() {
   const [authStatus, setAuthStatus] = useState<'checking' | 'authenticated' | 'anonymous'>('checking');
@@ -99,6 +106,7 @@ export function Admin() {
           <nav className="flex lg:flex-col gap-2 overflow-x-auto">
             <AdminNavButton active={view === 'dashboard'} onClick={() => setView('dashboard')} icon={<LayoutDashboard className="w-4 h-4" />} label="Dashboard" />
             <AdminNavButton active={view === 'announcement'} onClick={() => setView('announcement')} icon={<Megaphone className="w-4 h-4" />} label="Announcement Bar" />
+            <AdminNavButton active={view === 'releases'} onClick={() => setView('releases')} icon={<Download className="w-4 h-4" />} label="Release Management" />
             <AdminNavButton active={view === 'blog'} onClick={() => setView('blog')} icon={<FileText className="w-4 h-4" />} label="Blog" />
             <AdminNavButton active={view === 'technical'} onClick={() => setView('technical')} icon={<Pencil className="w-4 h-4" />} label="AIgency Technical" />
           </nav>
@@ -115,6 +123,7 @@ export function Admin() {
           )}
           {view === 'dashboard' && <Dashboard />}
           {view === 'announcement' && <AnnouncementAdmin onMessage={setMessage} />}
+          {view === 'releases' && <ReleaseManagementAdmin onMessage={setMessage} />}
           {view === 'blog' && <BlogAdmin onMessage={setMessage} />}
           {view === 'technical' && <TechnicalAdmin onMessage={setMessage} />}
         </section>
@@ -185,12 +194,16 @@ function Dashboard() {
     <div>
       <h2 className="text-3xl font-bold text-white mb-3">Dashboard</h2>
       <p className="text-[var(--color-ad-text-muted)] max-w-2xl">
-        Manage the announcement bar, published blog content, and the structured AIgency Technical Architecture page. Announcement and technical changes go live immediately.
+        Manage the announcement bar, release downloads, published blog content, and the structured AIgency Technical Architecture page. Public-facing changes go live immediately.
       </p>
-      <div className="mt-8 grid md:grid-cols-3 gap-4">
+      <div className="mt-8 grid md:grid-cols-2 xl:grid-cols-4 gap-4">
         <div className="rounded-lg border border-[var(--color-ad-border)] bg-[var(--color-ad-surface)] p-5">
           <h3 className="font-bold text-white mb-2">Announcement Bar</h3>
           <p className="text-sm text-[var(--color-ad-text-muted)]">Update the slim site-wide header announcement and optional link.</p>
+        </div>
+        <div className="rounded-lg border border-[var(--color-ad-border)] bg-[var(--color-ad-surface)] p-5">
+          <h3 className="font-bold text-white mb-2">Release Management</h3>
+          <p className="text-sm text-[var(--color-ad-text-muted)]">Update public versions, availability, status labels, and download links.</p>
         </div>
         <div className="rounded-lg border border-[var(--color-ad-border)] bg-[var(--color-ad-surface)] p-5">
           <h3 className="font-bold text-white mb-2">Blog posts</h3>
@@ -332,6 +345,204 @@ function AnnouncementAdmin({ onMessage }: { onMessage: (message: string) => void
         </div>
       )}
     </div>
+  );
+}
+
+function ReleaseManagementAdmin({ onMessage }: { onMessage: (message: string) => void }) {
+  const [draft, setDraft] = useState<ReleaseManagement>(fallbackReleaseData);
+  const [loadedSnapshot, setLoadedSnapshot] = useState(JSON.stringify(fallbackReleaseData));
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+  const isDirty = JSON.stringify(draft) !== loadedSnapshot;
+
+  useUnsavedWarning(isDirty);
+
+  const loadReleases = async () => {
+    setIsLoading(true);
+    setError('');
+    const response = await apiRequest<ReleaseManagement>('/api/admin/releases');
+    if (response.ok) {
+      setDraft(toReleaseInput(response.data));
+      setLoadedSnapshot(JSON.stringify(toReleaseInput(response.data)));
+    } else if ('error' in response) {
+      setError(response.error);
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    void loadReleases();
+  }, []);
+
+  const updateSettings = (patch: Partial<ReleaseManagement['settings']>) => {
+    setDraft((current) => ({
+      ...current,
+      settings: { ...current.settings, ...patch },
+    }));
+    setError('');
+  };
+
+  const updatePlatform = (platformKey: PlatformRelease['platformKey'], patch: Partial<PlatformRelease>) => {
+    setDraft((current) => ({
+      ...current,
+      platforms: current.platforms.map((platform) => platform.platformKey === platformKey ? { ...platform, ...patch } : platform),
+    }));
+    setError('');
+  };
+
+  const save = async () => {
+    const loaded = JSON.parse(loadedSnapshot) as ReleaseManagement;
+    const disablingAvailablePlatform = draft.platforms.some((platform) => {
+      const previous = loaded.platforms.find((item) => item.platformKey === platform.platformKey);
+      return previous?.isAvailable && !platform.isAvailable;
+    });
+
+    if (disablingAvailablePlatform && !window.confirm('Disable a platform that is currently available? Public download buttons for that platform will be removed.')) {
+      return;
+    }
+
+    setIsSaving(true);
+    setError('');
+    const response = await apiRequest<ReleaseManagement>('/api/admin/releases', {
+      method: 'PUT',
+      body: draft,
+    });
+
+    if (response.ok) {
+      const nextDraft = toReleaseInput(response.data);
+      setDraft(nextDraft);
+      setLoadedSnapshot(JSON.stringify(nextDraft));
+      onMessage('Release settings saved. Changes are live on the public downloads page.');
+    } else if ('error' in response) {
+      setError(response.error);
+    }
+    setIsSaving(false);
+  };
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-3xl font-bold text-white">Release Management</h2>
+        <p className="mt-2 text-sm text-[var(--color-accent-amber)]">Saving updates public downloads immediately. Use only direct https:// release or asset URLs.</p>
+      </div>
+
+      {error && <AdminError error={error} />}
+      {isLoading ? (
+        <p className="text-[var(--color-ad-text-muted)]">Loading release settings...</p>
+      ) : (
+        <div className="space-y-6">
+          <EditorPanel title="General release settings">
+            <div className="grid xl:grid-cols-2 gap-4">
+              <AdminField label="Main release heading (required)">
+                <input value={draft.settings.mainHeading} onChange={(event) => updateSettings({ mainHeading: event.target.value })} className="admin-input" maxLength={120} />
+              </AdminField>
+              <AdminField label="Latest overall version (required)">
+                <input value={draft.settings.latestVersion} onChange={(event) => updateSettings({ latestVersion: event.target.value })} className="admin-input" placeholder="v0.1.1" maxLength={40} />
+              </AdminField>
+              <AdminField label="GitHub releases page URL (required https://)">
+                <input value={draft.settings.githubReleasesUrl} onChange={(event) => updateSettings({ githubReleasesUrl: event.target.value })} className="admin-input" placeholder="https://github.com/.../releases" />
+              </AdminField>
+              <label className="flex items-center justify-between gap-4 rounded-md border border-[var(--color-ad-border)] bg-[var(--color-ad-bg)] px-3 py-3 text-sm text-white">
+                <span>
+                  <span className="block font-medium">Show legacy releases</span>
+                  <span className="text-xs text-[var(--color-ad-text-muted)]">Expose seeded legacy release links on the public downloads page.</span>
+                </span>
+                <input type="checkbox" checked={draft.settings.showLegacyReleases} onChange={(event) => updateSettings({ showLegacyReleases: event.target.checked })} className="h-5 w-5 accent-[var(--color-accent-purple)]" />
+              </label>
+            </div>
+            <div className="mt-4 grid xl:grid-cols-2 gap-4">
+              <AdminField label="Main release description (required)">
+                <textarea value={draft.settings.mainDescription} onChange={(event) => updateSettings({ mainDescription: event.target.value })} className="admin-textarea h-28" maxLength={500} />
+              </AdminField>
+              <AdminField label="Announcement or warning">
+                <textarea value={draft.settings.announcement} onChange={(event) => updateSettings({ announcement: event.target.value })} className="admin-textarea h-28" maxLength={500} placeholder="Optional message displayed above downloads." />
+              </AdminField>
+            </div>
+          </EditorPanel>
+
+          <div className="grid xl:grid-cols-3 gap-6">
+            {draft.platforms.map((platform) => (
+              <div key={platform.platformKey}>
+                <PlatformReleaseEditor platform={platform} onChange={(patch) => updatePlatform(platform.platformKey, patch)} />
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <button disabled={isSaving} onClick={save} className="admin-primary-button"><Save className="w-4 h-4" /> {isSaving ? 'Saving...' : 'Save release settings'}</button>
+            <button disabled={isSaving || !isDirty} onClick={loadReleases} className="admin-secondary-button"><RotateCcw className="w-4 h-4" /> Reset unsaved</button>
+          </div>
+          {isDirty && <p className="text-xs text-[var(--color-accent-amber)]">Unsaved changes</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PlatformReleaseEditor({ platform, onChange }: { platform: PlatformRelease; onChange: (patch: Partial<PlatformRelease>) => void }) {
+  const primaryPlaceholder = platform.platformKey === 'windows' ? 'Installer' : platform.platformKey === 'macos' ? 'DMG or package' : 'Package';
+  const secondaryPlaceholder = platform.platformKey === 'windows' ? 'Portable executable' : 'Optional secondary label';
+
+  return (
+    <EditorPanel title={platform.displayName || platform.platformKey}>
+      <div className="space-y-4">
+        <div className="grid md:grid-cols-2 xl:grid-cols-1 gap-4">
+          <label className="flex items-center justify-between gap-4 rounded-md border border-[var(--color-ad-border)] bg-[var(--color-ad-bg)] px-3 py-3 text-sm text-white">
+            <span>
+              <span className="block font-medium">Available</span>
+              <span className="text-xs text-[var(--color-ad-text-muted)]">Controls whether download buttons can appear.</span>
+            </span>
+            <input type="checkbox" checked={platform.isAvailable} onChange={(event) => onChange({ isAvailable: event.target.checked })} className="h-5 w-5 accent-[var(--color-accent-purple)]" />
+          </label>
+          <label className="flex items-center justify-between gap-4 rounded-md border border-[var(--color-ad-border)] bg-[var(--color-ad-bg)] px-3 py-3 text-sm text-white">
+            <span>
+              <span className="block font-medium">Visible publicly</span>
+              <span className="text-xs text-[var(--color-ad-text-muted)]">Hidden platforms are removed from downloads.</span>
+            </span>
+            <input type="checkbox" checked={platform.isVisible} onChange={(event) => onChange({ isVisible: event.target.checked })} className="h-5 w-5 accent-[var(--color-accent-purple)]" />
+          </label>
+        </div>
+
+        <AdminField label="Display name (required)">
+          <input value={platform.displayName} onChange={(event) => onChange({ displayName: event.target.value })} className="admin-input" maxLength={80} />
+        </AdminField>
+        <AdminField label={platform.isAvailable ? 'Current version (required when available)' : 'Current version'}>
+          <input value={platform.currentVersion} onChange={(event) => onChange({ currentVersion: event.target.value })} className="admin-input" placeholder="v0.1.1" maxLength={40} />
+        </AdminField>
+        <div className="grid md:grid-cols-2 xl:grid-cols-1 gap-4">
+          <AdminField label="Status label (required)">
+            <select value={platform.statusLabel} onChange={(event) => onChange({ statusLabel: event.target.value as PlatformStatusLabel })} className="admin-input">
+              {statusLabels.map((label) => <option key={label} value={label}>{label}</option>)}
+            </select>
+          </AdminField>
+          <AdminField label="Display order (required)">
+            <input type="number" value={platform.displayOrder} onChange={(event) => onChange({ displayOrder: Number(event.target.value) })} className="admin-input" />
+          </AdminField>
+        </div>
+
+        <AdminField label={platform.isAvailable ? `Primary download URL (required https://, ${primaryPlaceholder})` : `Primary download URL (https://, ${primaryPlaceholder})`}>
+          <input value={platform.primaryDownloadUrl} onChange={(event) => onChange({ primaryDownloadUrl: event.target.value })} className="admin-input" placeholder="https://github.com/.../releases/download/..." />
+        </AdminField>
+        <AdminField label={platform.isAvailable ? 'Primary button label (required)' : 'Primary button label'}>
+          <input value={platform.primaryButtonLabel} onChange={(event) => onChange({ primaryButtonLabel: event.target.value })} className="admin-input" placeholder={primaryPlaceholder} maxLength={60} />
+        </AdminField>
+        <AdminField label={`Secondary download URL (optional https://, ${secondaryPlaceholder})`}>
+          <input value={platform.secondaryDownloadUrl} onChange={(event) => onChange({ secondaryDownloadUrl: event.target.value })} className="admin-input" placeholder="https://github.com/.../releases/download/..." />
+        </AdminField>
+        <AdminField label="Secondary button label">
+          <input value={platform.secondaryButtonLabel} onChange={(event) => onChange({ secondaryButtonLabel: event.target.value })} className="admin-input" placeholder={secondaryPlaceholder} maxLength={60} />
+        </AdminField>
+        <div className="grid md:grid-cols-2 xl:grid-cols-1 gap-4">
+          <AdminField label="Release date">
+            <input type="date" value={platform.releaseDate ?? ''} onChange={(event) => onChange({ releaseDate: event.target.value || null })} className="admin-input" />
+          </AdminField>
+          <AdminField label="Short release note">
+            <textarea value={platform.releaseNote} onChange={(event) => onChange({ releaseNote: event.target.value })} className="admin-textarea h-24" maxLength={300} />
+          </AdminField>
+        </div>
+      </div>
+    </EditorPanel>
   );
 }
 
@@ -971,6 +1182,21 @@ function toAnnouncementInput(announcement: SiteAnnouncement): SiteAnnouncementIn
     linkText: announcement.linkText,
     linkUrl: announcement.linkUrl,
     updatedAt: announcement.updatedAt,
+  };
+}
+
+function toReleaseInput(releases: ReleaseManagement): ReleaseManagement {
+  return {
+    settings: {
+      ...fallbackReleaseData.settings,
+      ...releases.settings,
+      announcement: releases.settings.announcement ?? '',
+    },
+    platforms: fallbackReleaseData.platforms.map((fallbackPlatform) => ({
+      ...fallbackPlatform,
+      ...releases.platforms.find((platform) => platform.platformKey === fallbackPlatform.platformKey),
+    })),
+    legacyReleases: releases.legacyReleases ?? [],
   };
 }
 
