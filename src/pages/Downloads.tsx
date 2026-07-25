@@ -4,6 +4,21 @@ import type { ApiResponse, LegacyReleaseAsset, PlatformRelease, ReleaseManagemen
 import { Download, Terminal, Copy, Check, ExternalLink } from 'lucide-react';
 import { motion } from 'motion/react';
 
+type DownloadAsset = {
+  id: string;
+  title: string;
+  version: string;
+  type: string;
+  arch?: string;
+  url: string;
+  buttonLabel: string;
+  available: boolean;
+  recommended?: boolean;
+  statusLabel?: PlatformRelease['statusLabel'];
+  releaseNote?: string;
+  releaseDate?: string | null;
+};
+
 export function Downloads() {
   const [releaseData, setReleaseData] = useState<ReleaseManagement>(fallbackReleaseData);
   const [copied, setCopied] = useState(false);
@@ -46,46 +61,75 @@ npm run build`;
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const renderPlatform = (platform: PlatformRelease, i: number) => (
-    <section key={platform.platformKey}>
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <h2 className="text-2xl font-bold text-white">{platform.displayName}</h2>
-        <StatusPill status={platform.statusLabel} />
-      </div>
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: i * 0.1 }}
-        className={`p-6 border rounded-xl bg-[var(--color-ad-surface)] ${platform.isAvailable ? 'border-[var(--color-ad-border)] hover:border-[var(--color-accent-purple-border)] hover:shadow-[0_0_20px_var(--color-accent-purple-glow)]' : 'border-[var(--color-accent-purple-border)]'} transition-all`}
-      >
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-          <div>
-            <h3 className="text-white font-bold">{platform.displayName}</h3>
-            <p className="mt-1 text-xs text-[var(--color-ad-text-muted)] font-medium">
-              {platform.currentVersion ? formatVersion(platform.currentVersion) : platform.statusLabel}
-              {platform.releaseDate ? ` • ${formatDate(platform.releaseDate)}` : ''}
-            </p>
-            {platform.releaseNote && (
-              <p className="mt-3 text-sm text-[var(--color-ad-text-muted)] leading-relaxed">{platform.releaseNote}</p>
+  const renderPlatform = (platform: PlatformRelease, sectionIndex: number) => {
+    const assets = buildDownloadAssets(platform);
+
+    return (
+      <section key={platform.platformKey}>
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          <h2 className="text-2xl font-bold text-white">{platform.displayName}</h2>
+          <StatusPill status={platform.statusLabel} />
+        </div>
+        <div className="grid sm:grid-cols-2 gap-5">
+          {assets.map((asset, i) => renderDownloadAsset(asset, i, sectionIndex * 0.1))}
+        </div>
+      </section>
+    );
+  };
+
+  const renderDownloadAsset = (asset: DownloadAsset, i: number, delayOffset: number = 0) => (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: delayOffset + i * 0.1 }}
+      key={asset.id}
+      className={`p-6 border bg-[var(--color-ad-surface)] rounded-xl flex flex-col transition-all relative overflow-hidden group ${
+        asset.available
+          ? 'border-[var(--color-ad-border)] hover:border-[var(--color-accent-purple-border)] hover:shadow-[0_0_20px_var(--color-accent-purple-glow)]'
+          : 'border-[var(--color-accent-purple-border)]'
+      }`}
+    >
+      <div className="flex justify-between items-start mb-4 relative z-10">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-white font-bold">{asset.title}</h3>
+            {asset.recommended && (
+              <span className="px-2 py-0.5 text-[10px] font-bold text-white bg-[var(--color-accent-purple)] rounded-full tracking-wide uppercase">Recommended</span>
             )}
           </div>
+          <p className="text-xs text-[var(--color-ad-text-muted)] font-medium">
+            {asset.version}
+            {asset.releaseDate ? ` • ${formatDate(asset.releaseDate)}` : ''}
+            {asset.arch ? ` • ${asset.arch}` : ''}
+            {asset.type ? ` • ${asset.type}` : ''}
+          </p>
+          {asset.releaseNote && (
+            <p className="mt-3 text-sm text-[var(--color-ad-text-muted)] leading-relaxed">{asset.releaseNote}</p>
+          )}
         </div>
+      </div>
 
-        <div className="mt-5 flex flex-wrap gap-3">
-          {platform.isAvailable && platform.primaryDownloadUrl && (
-            <DownloadButton url={platform.primaryDownloadUrl} label={platform.primaryButtonLabel || 'Download'} primary />
-          )}
-          {platform.isAvailable && platform.secondaryDownloadUrl && (
-            <DownloadButton url={platform.secondaryDownloadUrl} label={platform.secondaryButtonLabel || 'Download'} />
-          )}
-          {!platform.isAvailable && (
-            <span className="inline-flex items-center rounded-md border border-[var(--color-ad-border)] px-4 py-2.5 text-sm font-bold text-[var(--color-ad-text-muted)]">
-              {platform.statusLabel}
-            </span>
-          )}
-        </div>
-      </motion.div>
-    </section>
+      <div className="mt-auto pt-5 relative z-10 space-y-3">
+        {asset.available ? (
+          <a
+            href={asset.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-md transition-all ${asset.recommended ? 'bg-[var(--color-accent-purple)] hover:bg-[var(--color-accent-purple-hover)] hover:shadow-[0_0_15px_var(--color-accent-purple-glow)] hover:scale-[1.02] active:scale-95' : 'bg-[var(--color-ad-surface-hover)] border border-[var(--color-accent-purple-border)] hover:bg-[var(--color-accent-purple-soft)] hover:border-[var(--color-accent-purple)] hover:scale-[1.02] active:scale-95'}`}
+          >
+            <Download className="w-4 h-4" /> {asset.buttonLabel}
+          </a>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-md transition-all bg-[var(--color-ad-surface-hover)] border border-[var(--color-accent-purple-border)] text-[var(--color-ad-text-muted)] opacity-70 cursor-not-allowed"
+          >
+            <Download className="w-4 h-4" /> {asset.statusLabel ?? 'Unavailable'}
+          </button>
+        )}
+      </div>
+    </motion.div>
   );
 
   return (
@@ -142,19 +186,6 @@ npm run build`;
   );
 }
 
-function DownloadButton({ url, label, primary = false }: { url: string; label: string; primary?: boolean }) {
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`inline-flex justify-center items-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-md transition-all ${primary ? 'bg-[var(--color-accent-purple)] hover:bg-[var(--color-accent-purple-hover)] hover:shadow-[0_0_15px_var(--color-accent-purple-glow)] hover:scale-[1.02] active:scale-95' : 'bg-[var(--color-ad-surface-hover)] border border-[var(--color-accent-purple-border)] hover:bg-[var(--color-accent-purple-soft)] hover:border-[var(--color-accent-purple)] hover:scale-[1.02] active:scale-95'}`}
-    >
-      <Download className="w-4 h-4" /> {label}
-    </a>
-  );
-}
-
 function StatusPill({ status }: { status: PlatformRelease['statusLabel'] }) {
   const isAvailable = status === 'Available';
   return (
@@ -162,6 +193,121 @@ function StatusPill({ status }: { status: PlatformRelease['statusLabel'] }) {
       {status}
     </span>
   );
+}
+
+function buildDownloadAssets(platform: PlatformRelease): DownloadAsset[] {
+  if (!platform.isAvailable) {
+    return [
+      {
+        id: `${platform.platformKey}-unavailable`,
+        title: platform.displayName,
+        version: platform.currentVersion ? formatVersion(platform.currentVersion) : platform.statusLabel,
+        type: '',
+        url: '',
+        buttonLabel: platform.primaryButtonLabel || 'Download',
+        available: false,
+        statusLabel: platform.statusLabel,
+        releaseNote: platform.releaseNote,
+        releaseDate: platform.releaseDate,
+      },
+    ];
+  }
+
+  const assets: DownloadAsset[] = [];
+
+  if (platform.primaryDownloadUrl) {
+    assets.push({
+      id: `${platform.platformKey}-primary`,
+      title: buildDownloadTitle(platform, platform.primaryButtonLabel, true),
+      version: formatVersion(platform.currentVersion),
+      type: inferFileType(platform.primaryDownloadUrl, platform.primaryButtonLabel),
+      arch: inferArch(platform.primaryDownloadUrl, platform.primaryButtonLabel),
+      url: platform.primaryDownloadUrl,
+      buttonLabel: platform.primaryButtonLabel || 'Download',
+      available: true,
+      recommended: true,
+      releaseNote: platform.releaseNote,
+      releaseDate: platform.releaseDate,
+    });
+  }
+
+  if (platform.secondaryDownloadUrl) {
+    assets.push({
+      id: `${platform.platformKey}-secondary`,
+      title: buildDownloadTitle(platform, platform.secondaryButtonLabel, false),
+      version: formatVersion(platform.currentVersion),
+      type: inferFileType(platform.secondaryDownloadUrl, platform.secondaryButtonLabel),
+      arch: inferArch(platform.secondaryDownloadUrl, platform.secondaryButtonLabel),
+      url: platform.secondaryDownloadUrl,
+      buttonLabel: platform.secondaryButtonLabel || 'Download',
+      available: true,
+      releaseDate: platform.releaseDate,
+    });
+  }
+
+  return assets.length > 0 ? assets : buildDownloadAssets({ ...platform, isAvailable: false });
+}
+
+function buildDownloadTitle(platform: PlatformRelease, label: string, primary: boolean): string {
+  const normalizedLabel = label.trim();
+
+  if (platform.platformKey === 'windows') {
+    if (/portable/i.test(normalizedLabel)) {
+      return 'Windows Portable';
+    }
+
+    if (/install/i.test(normalizedLabel)) {
+      return 'Windows Installer';
+    }
+  }
+
+  return normalizedLabel || `${platform.displayName} ${primary ? 'Installer' : 'Download'}`;
+}
+
+function inferFileType(url: string, label: string): string {
+  const source = `${url} ${label}`.toLowerCase();
+  if (source.includes('.dmg') || /\bdmg\b/.test(source)) {
+    return 'DMG';
+  }
+
+  if (source.includes('.zip') || /\bzip\b/.test(source)) {
+    return 'ZIP';
+  }
+
+  if (source.includes('.exe')) {
+    return '.exe';
+  }
+
+  if (source.includes('.msi')) {
+    return '.msi';
+  }
+
+  if (source.includes('.deb')) {
+    return '.deb';
+  }
+
+  if (source.includes('.rpm')) {
+    return '.rpm';
+  }
+
+  if (source.includes('.appimage')) {
+    return 'AppImage';
+  }
+
+  return '';
+}
+
+function inferArch(url: string, label: string): string | undefined {
+  const source = `${url} ${label}`.toLowerCase();
+  if (source.includes('arm64') || source.includes('apple silicon')) {
+    return 'arm64';
+  }
+
+  if (source.includes('x64') || source.includes('x86_64') || source.includes('intel')) {
+    return 'x64';
+  }
+
+  return undefined;
 }
 
 function LegacyReleases({
