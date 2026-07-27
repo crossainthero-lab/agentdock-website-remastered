@@ -5,6 +5,7 @@ import { Home } from './pages/Home';
 import { Downloads } from './pages/Downloads';
 import { AIgency } from './pages/AIgency';
 import { AIgencyTechnical } from './pages/AIgencyTechnical';
+import { Pro } from './pages/Pro';
 import { Blog } from './pages/Blog';
 import { BlogPost } from './pages/BlogPost';
 import { Admin } from './pages/Admin';
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/downloads" element={<Downloads />} />
           <Route path="/aigency" element={<AIgency />} />
           <Route path="/aigency/technical" element={<AIgencyTechnical />} />
+          <Route path="/pro" element={<Pro />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/admin/*" element={<Admin />} />

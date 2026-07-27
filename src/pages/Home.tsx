@@ -197,9 +197,14 @@ export function Home() {
         className="container mx-auto px-6 max-w-4xl text-center mb-8"
       >
         <h2 className="text-3xl font-bold text-white mb-8">Ready to upgrade your workflow?</h2>
-        <Link to="/downloads" className="inline-flex px-10 py-4 text-sm font-bold text-white bg-[var(--color-accent-purple)] rounded-md hover:bg-[var(--color-accent-purple-hover)] hover:shadow-[0_0_20px_var(--color-accent-purple-glow)] hover:scale-[1.02] active:scale-95 transition-all">
-          Download AgentDock
-        </Link>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Link to="/downloads" className="inline-flex px-10 py-4 text-sm font-bold text-white bg-[var(--color-accent-purple)] rounded-md hover:bg-[var(--color-accent-purple-hover)] hover:shadow-[0_0_20px_var(--color-accent-purple-glow)] hover:scale-[1.02] active:scale-95 transition-all">
+            Download AgentDock
+          </Link>
+          <Link to="/pro" className="inline-flex px-10 py-4 text-sm font-bold text-[#1a1a20] bg-amber-400 rounded-md hover:bg-amber-300 hover:shadow-[0_0_20px_var(--color-accent-amber-glow)] hover:scale-[1.02] active:scale-95 transition-all">
+            Discover AgentDock Pro
+          </Link>
+        </div>
       </motion.section>
     </div>
   );

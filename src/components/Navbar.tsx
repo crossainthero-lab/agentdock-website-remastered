@@ -16,6 +16,7 @@ export function Navbar() {
     { name: 'Home', path: '/' },
     { name: 'Downloads', path: '/downloads' },
     { name: 'AIgency', path: '/aigency' },
+    { name: 'Pro', path: '/pro' },
     { name: 'Blog', path: '/blog' },
   ];
 

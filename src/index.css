@@ -25,6 +25,7 @@
   --color-accent-amber: #f59e0b;
   --color-accent-amber-soft: rgba(245, 158, 11, 0.1);
   --color-accent-amber-border: rgba(245, 158, 11, 0.3);
+  --color-accent-amber-glow: rgba(245, 158, 11, 0.15);
 }
 
 body {

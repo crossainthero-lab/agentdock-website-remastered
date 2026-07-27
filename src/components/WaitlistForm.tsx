@@ -5,7 +5,7 @@ import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 type FormState = 'idle' | 'submitting' | 'success' | 'already-joined' | 'error';
 
-export function WaitlistForm() {
+export function WaitlistForm({ source }: { source?: string }) {
   const [formState, setFormState] = useState<FormState>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -71,7 +71,8 @@ export function WaitlistForm() {
       name: name.trim(),
       email: email.trim(),
       useCase: useCase.trim() || undefined,
-      website
+      website,
+      source
     };
 
     try {

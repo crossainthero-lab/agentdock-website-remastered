@@ -29,7 +29,7 @@ export interface WaitlistBindings {
 const MAX_BODY_BYTES = 8 * 1024;
 const MAX_NAME_LENGTH = 80;
 const MAX_USE_CASE_LENGTH = 1000;
-const SOURCE = "agentdock-website";
+const DEFAULT_SOURCE = "agentdock-website";
 const EMAIL_PATTERN =
   /^[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?)+$/i;
 
@@ -113,7 +113,7 @@ export async function handleWaitlistRequest(
         validation.value.name,
         validation.value.email,
         validation.value.useCase || null,
-        SOURCE,
+        validation.value.source || DEFAULT_SOURCE,
       )
       .run();
 
@@ -127,7 +127,7 @@ export async function handleWaitlistRequest(
 
 function validateWaitlistPayload(
   payload: unknown,
-): { ok: true; value: Required<Omit<WaitlistRequest, "website">> } | { ok: false; error: string } {
+): { ok: true; value: Omit<WaitlistRequest, "website"> & { name: string; email: string; source?: string } } | { ok: false; error: string } {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return { ok: false, error: "Request body must be a JSON object." };
   }
@@ -146,9 +146,10 @@ function validateWaitlistPayload(
   const email = rawEmail.toLowerCase();
   const website = normalizeOptionalString(record.website);
   const useCase = normalizeOptionalString(record.useCase);
+  const source = normalizeOptionalString(record.source);
 
-  if (website === null || useCase === null) {
-    return { ok: false, error: "Use case and website must be text values." };
+  if (website === null || useCase === null || source === null) {
+    return { ok: false, error: "Use case, website, and source must be text values." };
   }
 
   if (website.length > 0) {
@@ -167,7 +168,7 @@ function validateWaitlistPayload(
     return { ok: false, error: "Use case must be 1,000 characters or fewer." };
   }
 
-  return { ok: true, value: { name, email, useCase } };
+  return { ok: true, value: { name, email, useCase, source: source || undefined } };
 }
 
 function normalizeRequiredString(value: unknown): string | null {
