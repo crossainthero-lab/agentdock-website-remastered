@@ -1,206 +1,237 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Github, ArrowRight, Layers, ShieldCheck, RefreshCcw, Command, Terminal, FolderTree } from 'lucide-react';
 import { motion } from 'motion/react';
-import { AGENTS } from '../config/agents';
+import { Terminal, Layers, Shield, Cpu, RefreshCw, GitBranch } from 'lucide-react';
+import { SectionHeading, FeatureCard, ProductScreenshotFrame, CallToAction } from '../components/ui';
 
 export function Home() {
   return (
-    <div className="flex flex-col gap-32 pb-32 overflow-hidden">
+    <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="container mx-auto px-6 pt-32 pb-16 text-center max-w-4xl flex flex-col items-center relative">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-3/4 bg-[var(--color-accent-purple)]/10 blur-[120px] rounded-full pointer-events-none -z-10"></div>
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: "easeOut" }}>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6 leading-[1.1]">
-            Your coding agents.<br/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-400 to-gray-200">One desktop workspace.</span>
-          </h1>
-          <p className="text-lg md:text-xl text-[var(--color-ad-text-muted)] mb-10 max-w-2xl leading-relaxed mx-auto">
-            Bring Claude Code, OpenAI Codex, and Google Antigravity into one powerful, local desktop interface. Stop juggling terminal windows and let your agents work side by side.
-          </p>
-          <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 w-full md:w-auto">
-            <Link to="/downloads" className="group w-full sm:w-auto px-8 py-3.5 text-sm font-bold text-white bg-[var(--color-accent-purple)] rounded-md hover:bg-[var(--color-accent-purple-hover)] hover:shadow-[0_0_25px_var(--color-accent-purple-glow)] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-purple)] focus:ring-offset-2 focus:ring-offset-[var(--color-ad-bg)]">
-              Download AgentDock
-            </Link>
-            
-            <Link to="/aigency" className="group relative w-full sm:w-auto px-8 py-3.5 text-sm font-bold text-white bg-[var(--color-ad-surface)] rounded-md hover:bg-[var(--color-accent-blue-soft)] border border-[var(--color-accent-blue-border)] hover:border-[var(--color-accent-blue)] hover:shadow-[0_0_15px_var(--color-accent-blue-glow)] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 overflow-hidden focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-blue)] focus:ring-offset-2 focus:ring-offset-[var(--color-ad-bg)]">
-              <span className="absolute inset-0 bg-[url('/grid-texture.svg')] opacity-10 mix-blend-overlay"></span>
-              Explore AIgency <ArrowRight className="w-4 h-4 text-[var(--color-accent-blue)] group-hover:translate-x-1 transition-transform" />
-            </Link>
-
-            <a href="https://github.com/crossainthero-lab/AgentDock" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto px-6 py-3.5 text-sm font-medium text-[var(--color-ad-text-muted)] hover:text-white bg-transparent border border-[var(--color-ad-border)] rounded-md hover:bg-[var(--color-ad-surface-hover)] active:scale-95 transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-ad-border)] focus:ring-offset-2 focus:ring-offset-[var(--color-ad-bg)]">
-              View on GitHub <Github className="w-4 h-4" />
-            </a>
-          </div>
-          <p className="mt-8 text-xs font-medium flex items-center justify-center gap-2">
-            <span className="flex items-center gap-1 text-[var(--color-accent-green)]"><span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-green)]"></span> Windows</span>
-            <span className="flex items-center gap-1 text-[var(--color-accent-green)]"><span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-green)]"></span> macOS</span>
-            <span className="flex items-center gap-1 text-[var(--color-accent-amber)]"><span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-amber)]"></span> Linux (Experimental)</span>
-          </p>
-        </motion.div>
-      </section>
-
-      {/* App Screenshot */}
-      <motion.section 
-        initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8, ease: "easeOut" }}
-        className="container mx-auto px-6 max-w-5xl"
-      >
-        <div className="rounded-xl overflow-hidden border border-[var(--color-accent-purple-border)] bg-[var(--color-ad-surface)] shadow-[0_0_40px_var(--color-accent-purple-glow)] relative group">
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-ad-bg)] via-transparent to-transparent opacity-50 pointer-events-none mix-blend-multiply"></div>
-          <img src="/agentdock-screenshot.png" alt="AgentDock Application" className="w-full h-auto block transition-transform duration-1000 group-hover:scale-[1.01]" />
-        </div>
-      </motion.section>
-
-      {/* Supported Coding Agents */}
-      <section className="container mx-auto px-6 max-w-5xl">
-        <div className="text-center mb-12">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.5 }}
-            className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight"
-          >
-            Supported coding agents
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-lg text-[var(--color-ad-text-muted)] max-w-2xl mx-auto"
-          >
-            Run Claude Code, OpenAI Codex, and Google Antigravity through one focused AgentDock workspace.
-          </motion.p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {AGENTS.map((agent, idx) => (
-            <motion.div 
-              key={agent.id}
-              initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: idx * 0.1 }}
-              className="group relative p-6 border border-[var(--color-ad-border)] bg-[var(--color-ad-surface)] rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg focus-within:ring-2 focus-within:ring-[var(--hover-color)] focus-within:ring-offset-2 focus-within:ring-offset-[var(--color-ad-bg)]"
-              style={{ '--hover-color': agent.accent } as React.CSSProperties}
-              tabIndex={0}
+      <section className="relative pt-32 pb-20 px-6 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[var(--color-accent-purple-soft)] via-transparent to-transparent pointer-events-none"></div>
+        <div className="container mx-auto max-w-5xl relative z-10">
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight leading-tight"
             >
-              <div className="absolute inset-0 bg-gradient-to-b from-[var(--hover-color)] to-transparent opacity-0 group-hover:opacity-[0.03] transition-opacity duration-300 rounded-xl pointer-events-none"></div>
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-[var(--hover-color)] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              
-              <div className="flex items-start justify-between mb-6 relative">
-                <div className="w-12 h-12 rounded-lg bg-[var(--color-ad-bg)] border border-[var(--color-ad-border)] flex items-center justify-center transition-colors group-hover:border-[var(--hover-color)] relative shadow-sm">
-                  <div className="absolute inset-0 bg-[var(--hover-color)] opacity-0 group-hover:opacity-10 blur-md transition-opacity rounded-lg"></div>
-                  <img src={agent.logoPath} alt={`${agent.name} logo`} className={`${agent.opticalSize} object-contain relative z-10`} />
-                </div>
-                <div className="text-xs font-semibold px-2.5 py-1 bg-[var(--color-ad-bg)] border border-[var(--color-ad-border)] rounded-full text-[var(--color-ad-text-muted)] group-hover:border-[var(--hover-color)] group-hover:text-white transition-colors flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-green)] group-hover:shadow-[0_0_8px_var(--color-accent-green)] transition-shadow"></span>
-                  Supported
-                </div>
-              </div>
-              
-              <div className="mb-2">
-                <h3 className="text-xl font-bold text-white mb-1 group-hover:text-[var(--hover-color)] transition-colors">{agent.name}</h3>
-                <span className="text-xs font-medium text-[var(--hover-color)] uppercase tracking-wider">{agent.provider || agent.command}</span>
-              </div>
-              <p className="text-sm text-[var(--color-ad-text-muted)] leading-relaxed">{agent.description}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Technical Routing Strip */}
-      <motion.section 
-        initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.8 }}
-        className="container mx-auto px-6 max-w-4xl"
-      >
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 border border-[var(--color-ad-border)] bg-[var(--color-ad-surface)] rounded-xl relative overflow-hidden text-sm">
-          <div className="absolute left-0 right-0 top-1/2 h-px bg-gradient-to-r from-transparent via-[var(--color-accent-blue-border)] to-transparent -z-10 hidden md:block"></div>
-          
-          <div className="flex items-center gap-2 px-4 py-2 bg-[var(--color-ad-bg)] border border-[var(--color-ad-border)] rounded-lg text-white font-medium shadow-sm">
-            <FolderTree className="w-4 h-4 text-[var(--color-accent-blue)]" /> Workspace
-          </div>
-          
-          <div className="hidden md:block w-8 h-px bg-[var(--color-accent-blue)]"></div>
-          <div className="md:hidden w-px h-6 bg-[var(--color-accent-blue)]"></div>
-          
-          <div className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-purple-soft)] border border-[var(--color-accent-purple-border)] rounded-lg text-white font-bold shadow-[0_0_10px_var(--color-accent-purple-glow)]">
-            AgentDock
-          </div>
-
-          <div className="hidden md:block w-8 h-px bg-[var(--color-accent-blue)]"></div>
-          <div className="md:hidden w-px h-6 bg-[var(--color-accent-blue)]"></div>
-          
-          <div className="flex items-center gap-3 px-4 py-2 bg-[var(--color-ad-bg)] border border-[var(--color-ad-border)] rounded-lg shadow-sm">
-            {AGENTS.map((agent) => (
-              <img key={agent.id} src={agent.logoPath} alt={agent.name} className={`${agent.opticalSizeStrip} object-contain`} />
-            ))}
-          </div>
-
-          <div className="hidden md:block w-8 h-px bg-[var(--color-accent-blue)]"></div>
-          <div className="md:hidden w-px h-6 bg-[var(--color-accent-blue)]"></div>
-
-          <div className="flex items-center gap-2 px-4 py-2 bg-[var(--color-ad-bg)] border border-[var(--color-accent-green-border)] rounded-lg text-white font-medium shadow-sm">
-            <ShieldCheck className="w-4 h-4 text-[var(--color-accent-green)]" /> Project changes
-          </div>
-        </div>
-      </motion.section>
-
-      {/* Feature Boxes */}
-      <section className="container mx-auto px-6 max-w-5xl">
-        <motion.h2 
-          initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.5 }}
-          className="text-3xl md:text-4xl font-bold text-white mb-12 text-center tracking-tight"
-        >
-          Built for power users
-        </motion.h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[
-            { icon: <Command className="w-5 h-5" />, color: 'var(--color-accent-blue)', title: 'Control before execution', desc: 'Review permissions, commands, handoffs, and agent activity before allowing important changes.' },
-            { icon: <Layers className="w-5 h-5" />, color: 'var(--color-accent-purple)', title: 'Your agents, one workspace', desc: 'Run Claude Code, OpenAI Codex, and Google Antigravity from one focused desktop application.' },
-            { icon: <Terminal className="w-5 h-5" />, color: 'var(--color-accent-blue)', title: 'Local tools, cleaner control', desc: 'AgentDock works with the coding-agent command-line tools installed on your own machine.' },
-            { icon: <FolderTree className="w-5 h-5" />, color: 'var(--color-accent-green)', title: 'Project-focused sessions', desc: 'Keep conversations and agent work organised around the repository or workspace they belong to.' },
-            { icon: <ShieldCheck className="w-5 h-5" />, color: 'var(--color-accent-purple)', title: 'Total configuration', desc: 'Control models, reasoning settings, permissions, workspaces, sessions, and agent behaviour seamlessly.' },
-            { icon: <RefreshCcw className="w-5 h-5" />, color: 'var(--color-accent-blue)', title: 'Switch without losing context', desc: 'Move between supported coding agents while keeping the project and workflow in one place.' },
-          ].map((item, idx) => (
-            <motion.div 
-              key={idx} 
-              initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ delay: idx * 0.1, duration: 0.5 }}
-              className="p-6 border border-[var(--color-ad-border)] bg-[var(--color-ad-surface)] rounded-xl hover:bg-[var(--color-ad-surface-hover)] transition-all group relative overflow-hidden flex flex-col"
-              style={{ '--hover-color': item.color } as React.CSSProperties}
+              One workspace for your AI coding agents.
+            </motion.h1>
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="text-xl text-[var(--color-ad-text-muted)] mb-10 leading-relaxed"
             >
-              <div className="absolute top-0 left-0 w-full h-1 bg-[var(--hover-color)] opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="w-10 h-10 rounded-lg bg-[var(--color-ad-bg)] border border-[var(--color-ad-border)] flex items-center justify-center mb-4 transition-colors group-hover:border-[var(--hover-color)]" style={{ color: item.color }}>
-                {item.icon}
-              </div>
-              <h3 className="text-lg text-white font-bold mb-2 group-hover:text-[var(--hover-color)] transition-colors">{item.title}</h3>
-              <p className="text-sm text-[var(--color-ad-text-muted)] leading-relaxed flex-1">{item.desc}</p>
+              AgentDock brings tools such as Claude Code, Codex, and Antigravity into one organised desktop workspace for projects, conversations, permissions, diagnostics, and agent workflows.
+            </motion.p>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center"
+            >
+              <a href="/downloads" className="px-8 py-3.5 text-sm font-bold text-white bg-[var(--color-accent-purple)] rounded-md hover:bg-[var(--color-accent-purple-hover)] hover:shadow-[0_0_20px_var(--color-accent-purple-glow)] transition-all">
+                Download AgentDock
+              </a>
+              <a href="https://github.com/crossainthero-lab/AgentDock" target="_blank" rel="noopener noreferrer" className="px-8 py-3.5 text-sm font-bold text-white bg-[var(--color-ad-surface)] border border-[var(--color-ad-border)] rounded-md hover:bg-[var(--color-ad-surface-hover)] transition-all">
+                View on GitHub
+              </a>
+              <a href="/pro" className="px-8 py-3.5 text-sm font-bold text-[var(--color-accent-purple)] bg-[var(--color-accent-purple-soft)] border border-[var(--color-accent-purple-border)] rounded-md hover:bg-[var(--color-accent-purple)] hover:text-white transition-all">
+                Explore AgentDock Pro
+              </a>
             </motion.div>
-          ))}
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+          >
+            <ProductScreenshotFrame alt="AgentDock Standard Desktop Workspace Interface" />
+          </motion.div>
         </div>
       </section>
 
-      {/* AIgency Preview */}
-      <motion.section 
-        initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.6 }}
-        className="container mx-auto px-6 max-w-4xl text-center"
-      >
-        <div className="py-20 px-8 rounded-2xl border border-[var(--color-accent-purple-border)] bg-[var(--color-accent-purple-soft)] relative overflow-hidden group hover:border-[var(--color-accent-purple)] transition-colors">
-          <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-accent-purple-glow)] to-transparent pointer-events-none transition-opacity duration-700 group-hover:opacity-100 opacity-50"></div>
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[30rem] h-32 bg-[var(--color-accent-purple)]/20 blur-[100px] rounded-full pointer-events-none"></div>
-          <span className="inline-block px-3 py-1 mb-8 text-xs font-semibold text-[var(--color-accent-purple)] bg-[var(--color-accent-purple-glow)] border border-[var(--color-accent-purple-border)] rounded-full tracking-wider uppercase">In Development</span>
-          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">Meet AIgency</h2>
-          <p className="text-[var(--color-ad-text-muted)] max-w-2xl mx-auto mb-10 text-lg leading-relaxed">
-            The future evolution of AgentDock. AIgency will allow multiple AI agents to coordinate, compare work, pass tasks between each other, and operate inside one managed workspace autonomously.
-          </p>
-          <Link to="/aigency" className="inline-flex items-center gap-2 px-8 py-3 text-sm font-medium text-white bg-[var(--color-ad-bg)] border border-[var(--color-accent-purple-border)] rounded-md hover:bg-[var(--color-accent-purple-soft)] hover:border-[var(--color-accent-purple)] transition-all">
-            Learn about AIgency <ArrowRight className="w-4 h-4" />
-          </Link>
+      {/* Problem Section */}
+      <section className="py-24 px-6 border-t border-[var(--color-ad-border)] bg-[var(--color-ad-surface)]/30">
+        <div className="container mx-auto max-w-5xl">
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+            <div>
+              <SectionHeading 
+                title="The fragmentation problem." 
+                subtitle="AI coding tools are incredibly powerful, but they are spread across separate terminals, applications, and browser windows." 
+              />
+              <ul className="space-y-4">
+                {[
+                  "Projects and conversations become fragmented.",
+                  "Each agent CLI behaves differently.",
+                  "Switching agents interrupts your development flow.",
+                  "Raw terminal output can be difficult to follow.",
+                  "Permissions, sessions, models, and diagnostics are managed inconsistently."
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <div className="mt-1 w-5 h-5 rounded-full bg-[var(--color-accent-amber-soft)] text-[var(--color-accent-amber)] flex items-center justify-center shrink-0">
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </div>
+                    <span className="text-[var(--color-ad-text-muted)]">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="p-8 rounded-2xl border border-[var(--color-ad-border)] bg-[var(--color-ad-surface)] shadow-2xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent"></div>
+              <h3 className="text-xl font-bold text-white mb-4 relative z-10">The Solution</h3>
+              <p className="text-[var(--color-ad-text-muted)] mb-6 relative z-10">
+                Developers need one organised layer without abandoning their preferred underlying tools. AgentDock sits above supported local agent tools and presents them through one consistent workspace.
+              </p>
+              
+              {/* CSS Diagram */}
+              <div className="flex flex-col items-center gap-2 relative z-10 p-6 bg-[var(--color-ad-bg)] rounded-xl border border-[var(--color-ad-border)]">
+                <div className="px-4 py-2 bg-[var(--color-ad-surface-hover)] border border-[var(--color-ad-border)] rounded-md text-sm font-medium text-white w-full text-center">Developer</div>
+                <div className="h-4 w-px bg-[var(--color-ad-border)]"></div>
+                <div className="px-4 py-3 bg-[var(--color-accent-purple-soft)] border border-[var(--color-accent-purple-border)] rounded-md text-sm font-bold text-[var(--color-accent-purple)] w-full text-center shadow-[0_0_15px_var(--color-accent-purple-glow)]">AgentDock Workspace</div>
+                <div className="h-4 w-px bg-[var(--color-ad-border)]"></div>
+                <div className="flex gap-2 w-full">
+                  <div className="px-2 py-2 bg-[var(--color-ad-surface-hover)] border border-[var(--color-ad-border)] rounded-md text-xs font-medium text-[var(--color-ad-text-muted)] flex-1 text-center">Claude Code</div>
+                  <div className="px-2 py-2 bg-[var(--color-ad-surface-hover)] border border-[var(--color-ad-border)] rounded-md text-xs font-medium text-[var(--color-ad-text-muted)] flex-1 text-center">Antigravity</div>
+                  <div className="px-2 py-2 bg-[var(--color-ad-surface-hover)] border border-[var(--color-ad-border)] rounded-md text-xs font-medium text-[var(--color-ad-text-muted)] flex-1 text-center">Codex</div>
+                </div>
+                <div className="h-4 w-px bg-[var(--color-ad-border)]"></div>
+                <div className="px-4 py-2 bg-[var(--color-ad-surface-hover)] border border-[var(--color-ad-border)] rounded-md text-sm font-medium text-[var(--color-accent-green)] border-b-2 border-b-[var(--color-accent-green)] w-full text-center">Local Repository & Environment</div>
+              </div>
+            </div>
+          </div>
         </div>
-      </motion.section>
+      </section>
 
-      {/* CTA */}
-      <motion.section 
-        initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-100px" }} transition={{ duration: 0.5 }}
-        className="container mx-auto px-6 max-w-4xl text-center mb-8"
-      >
-        <h2 className="text-3xl font-bold text-white mb-8">Ready to upgrade your workflow?</h2>
-        <Link to="/downloads" className="inline-flex px-10 py-4 text-sm font-bold text-white bg-[var(--color-accent-purple)] rounded-md hover:bg-[var(--color-accent-purple-hover)] hover:shadow-[0_0_20px_var(--color-accent-purple-glow)] hover:scale-[1.02] active:scale-95 transition-all">
-          Download AgentDock
-        </Link>
-      </motion.section>
+      {/* Capabilities */}
+      <section className="py-24 px-6 border-t border-[var(--color-ad-border)]">
+        <div className="container mx-auto max-w-5xl">
+          <SectionHeading 
+            title="Desktop capabilities." 
+            subtitle="AgentDock is a desktop application, not a generic web chatbot or a replacement IDE. It focuses purely on managing AI agents on your machine." 
+            className="text-center mx-auto"
+          />
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-16">
+            <FeatureCard 
+              icon={<Layers />}
+              title="Unified workspace"
+              description="Manage multiple projects and agent sessions from one clean interface instead of losing track of separate terminal windows."
+              badge="Available now"
+              delay={0}
+            />
+            <FeatureCard 
+              icon={<Terminal />}
+              title="Clean conversations"
+              description="Translates raw terminal output into readable, interactive conversations while preserving all context and code blocks."
+              badge="Available now"
+              delay={0.1}
+            />
+            <FeatureCard 
+              icon={<Shield />}
+              title="Permission handling"
+              description="Centralises terminal permission requests and file access approvals so you remain in control of your local environment."
+              badge="Available now"
+              delay={0.2}
+            />
+            <FeatureCard 
+              icon={<RefreshCw />}
+              title="Agent handoffs"
+              description="Start a task with a fast agent, then seamlessly hand the context over to a more capable reasoning agent to finish the complex parts."
+              badge="Preview"
+              delay={0.3}
+            />
+            <FeatureCard 
+              icon={<Cpu />}
+              title="CLI diagnostics"
+              description="Automatically detects installed agent CLIs on your system and provides diagnostic tooling to ensure they are configured correctly."
+              badge="Available now"
+              delay={0.4}
+            />
+            <FeatureCard 
+              icon={<GitBranch />}
+              title="Git awareness"
+              description="Understands your local git repositories and worktrees, allowing agents to operate within the correct branch context."
+              badge="Preview"
+              delay={0.5}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="py-24 px-6 border-t border-[var(--color-ad-border)] bg-[var(--color-ad-surface)]/30">
+        <div className="container mx-auto max-w-4xl">
+          <SectionHeading title="How AgentDock works." className="text-center" />
+          <div className="mt-16 relative">
+            <div className="absolute left-[27px] top-4 bottom-4 w-px bg-[var(--color-ad-border)] hidden md:block"></div>
+            <div className="space-y-12">
+              {[
+                { step: 1, title: "Install AgentDock", desc: "Download and install the desktop application for macOS, Windows, or Linux." },
+                { step: 2, title: "Connect agents", desc: "Install a supported AI coding-agent CLI (like Claude Code or Antigravity) and ensure it is on your PATH." },
+                { step: 3, title: "Open a project", desc: "Point AgentDock to your local repository directory to initialise a workspace." },
+                { step: 4, title: "Choose your agent", desc: "Select which installed agent you want to handle the current task." },
+                { step: 5, title: "Work seamlessly", desc: "Provide instructions and watch the agent execute commands and write code in an organised UI." },
+                { step: 6, title: "Switch when needed", desc: "Easily switch agents mid-session to hand off the context to a different model." }
+              ].map((item, i) => (
+                <div key={i} className="flex flex-col md:flex-row gap-6 relative z-10">
+                  <div className="w-14 h-14 rounded-full bg-[var(--color-ad-bg)] border-2 border-[var(--color-accent-purple-border)] flex items-center justify-center text-xl font-bold text-white shrink-0 shadow-[0_0_15px_var(--color-accent-purple-glow)]">
+                    {item.step}
+                  </div>
+                  <div className="pt-3">
+                    <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
+                    <p className="text-[var(--color-ad-text-muted)] leading-relaxed">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="mt-12 p-6 rounded-xl bg-[var(--color-ad-surface-hover)] border border-[var(--color-ad-border)] text-sm text-[var(--color-ad-text-muted)]">
+            <strong>Note:</strong> AgentDock is a workspace interface. You may require your own subscriptions, API keys, or access for the underlying AI services (Claude, OpenAI, Google) depending on the CLI tools you choose to connect.
+          </div>
+        </div>
+      </section>
+
+      {/* Pro Preview */}
+      <section className="py-24 px-6 border-t border-[var(--color-ad-border)]">
+        <div className="container mx-auto max-w-5xl">
+          <div className="p-12 rounded-3xl border border-[var(--color-accent-purple-border)] bg-gradient-to-br from-[var(--color-accent-purple-soft)] to-transparent relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--color-accent-purple)] rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
+            <div className="max-w-2xl relative z-10">
+              <span className="inline-block px-3 py-1 bg-[var(--color-accent-purple)] text-white text-xs font-bold rounded-full mb-6 tracking-widest uppercase">In Development</span>
+              <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight">AgentDock Pro & AIgency</h2>
+              <p className="text-xl text-[var(--color-ad-text-muted)] mb-8">
+                AgentDock Pro expands the original concept into a premium multi-agent development system. It introduces AIgency—allowing you to coordinate multiple specialised agents to tackle complex workflows, alongside cloud-supported sync and remote environments.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <a href="/pro" className="px-6 py-3 text-sm font-bold text-white bg-[var(--color-accent-purple)] rounded-md hover:bg-[var(--color-accent-purple-hover)] hover:shadow-[0_0_20px_var(--color-accent-purple-glow)] transition-all text-center">
+                  Explore AgentDock Pro
+                </a>
+                <a href="/waitlist" className="px-6 py-3 text-sm font-bold text-white bg-[var(--color-ad-surface)] border border-[var(--color-ad-border)] rounded-md hover:bg-[var(--color-ad-surface-hover)] transition-all text-center">
+                  Join the waitlist
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-12 px-6 border-t border-[var(--color-ad-border)]">
+        <div className="container mx-auto max-w-5xl">
+          <CallToAction 
+            title="Start building with AgentDock." 
+            description="Download the free desktop workspace today and bring order to your local AI coding agents."
+            primaryText="Download AgentDock"
+            primaryTo="/downloads"
+            secondaryText="View on GitHub"
+            secondaryTo="https://github.com/crossainthero-lab/AgentDock"
+          />
+        </div>
+      </section>
     </div>
   );
 }

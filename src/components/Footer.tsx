@@ -19,7 +19,8 @@ export function Footer() {
           <div className="flex flex-col gap-4">
             <span className="text-white font-bold tracking-tight">Product</span>
             <Link to="/downloads" className="text-[var(--color-ad-text-muted)] hover:text-white transition-colors">Downloads</Link>
-            <Link to="/aigency" className="text-[var(--color-ad-text-muted)] hover:text-white transition-colors">AIgency</Link>
+            <Link to="/pro" className="text-[var(--color-ad-text-muted)] hover:text-white transition-colors">AgentDock Pro</Link>
+            <Link to="/waitlist" className="text-[var(--color-ad-text-muted)] hover:text-white transition-colors">Waitlist</Link>
           </div>
           <div className="flex flex-col gap-4">
             <span className="text-white font-bold tracking-tight">Resources</span>
