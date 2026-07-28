@@ -12,7 +12,7 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { name: 'Product', path: '/' },
+    { name: 'Home', path: '/' },
     { name: 'AgentDock Pro', path: '/pro' },
     { name: 'Downloads', path: '/downloads' },
     { name: 'Blog', path: '/blog' },
@@ -89,6 +89,9 @@ export function Navbar() {
             <a href="https://github.com/crossainthero-lab/AgentDock" target="_blank" rel="noopener noreferrer" className="hidden md:block text-[var(--color-ad-text-muted)] hover:text-white transition-colors" aria-label="GitHub">
               <Github className="w-5 h-5" />
             </a>
+            <Link to="/pro" className="hidden md:inline-flex items-center justify-center px-4 py-2 text-sm font-bold text-[var(--color-ad-bg)] bg-white rounded-md hover:bg-gray-200 transition-all hover:scale-[1.02] active:scale-95">
+              Explore AgentDock Pro
+            </Link>
             <Link to="/downloads" className="hidden md:inline-flex items-center justify-center px-4 py-2 text-sm font-bold text-white bg-[var(--color-accent-purple)] rounded-md hover:bg-[var(--color-accent-purple-hover)] hover:shadow-[0_0_15px_var(--color-accent-purple-glow)] hover:scale-[1.02] active:scale-95 transition-all">
               Download
             </Link>
@@ -134,6 +137,9 @@ export function Navbar() {
               <a href="https://github.com/crossainthero-lab/AgentDock" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-base font-medium text-[var(--color-ad-text-muted)]">
                 <Github className="w-5 h-5" /> GitHub Repository
               </a>
+              <Link to="/pro" className="mt-2 inline-flex items-center justify-center px-4 py-3 text-sm font-bold text-[var(--color-ad-bg)] bg-white rounded-md transition-all">
+                Explore AgentDock Pro
+              </Link>
               <Link to="/downloads" className="mt-2 inline-flex items-center justify-center px-4 py-3 text-sm font-bold text-white bg-[var(--color-accent-purple)] rounded-md transition-all">
                 Download AgentDock
               </Link>

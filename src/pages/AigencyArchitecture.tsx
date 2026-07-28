@@ -66,9 +66,13 @@ export function AigencyArchitecture() {
       
       {/* Page Header */}
       <div className="container mx-auto px-6 max-w-7xl mb-12">
-        <Link to="/pro#aigency" className="inline-flex items-center gap-2 text-sm text-[var(--color-ad-text-muted)] hover:text-[var(--color-accent-purple)] transition-colors mb-8">
-          <ArrowLeft className="w-4 h-4" /> Back to AgentDock Pro
-        </Link>
+        <div className="flex items-center gap-2 text-sm text-[var(--color-ad-text-muted)] mb-8 font-medium">
+          <Link to="/pro" className="hover:text-white transition-colors">AgentDock Pro</Link>
+          <span>/</span>
+          <Link to="/pro#aigency" className="hover:text-white transition-colors">AIgency</Link>
+          <span>/</span>
+          <span className="text-[var(--color-accent-amber)]">Technical Architecture</span>
+        </div>
         <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">{technicalArchitectureIntro.title}</h1>
         <p className="text-[var(--color-ad-text-muted)] text-lg max-w-3xl">{technicalArchitectureIntro.description}</p>
         {contentStatus === 'loading' && (
@@ -118,6 +122,22 @@ export function AigencyArchitecture() {
 
         </main>
       </div>
+
+      {/* CTA Section */}
+      <section className="container mx-auto px-6 max-w-4xl text-center py-12 mt-12 border-t border-[var(--color-ad-border)]">
+        <h2 className="text-2xl font-bold text-white mb-4">Ready to build with an AI team?</h2>
+        <p className="text-[var(--color-ad-text-muted)] mb-8 max-w-lg mx-auto">
+          AgentDock Pro brings these orchestration capabilities to your desktop. Join the waitlist for early access.
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <Link to="/pro" className="w-full sm:w-auto px-6 py-3 text-sm font-bold text-[var(--color-ad-text)] bg-[var(--color-ad-surface)] border border-[var(--color-ad-border)] rounded-md hover:bg-[var(--color-ad-surface-hover)] transition-all">
+            Back to AgentDock Pro
+          </Link>
+          <Link to="/pro#waitlist" className="w-full sm:w-auto px-6 py-3 text-sm font-bold text-black bg-white rounded-md hover:bg-gray-200 transition-all">
+            Join the Waitlist
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { Blog } from './pages/Blog';
 import { BlogPost } from './pages/BlogPost';
 import { Admin } from './pages/Admin';
 import { useLocation } from 'react-router-dom';
+import ScrollToTop from './components/ScrollToTop';
 
 export default function App() {
   const location = useLocation();
@@ -16,15 +17,17 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--color-ad-bg)] text-[var(--color-ad-text)] font-sans">
+      <ScrollToTop />
       {!isAdmin && <Navbar />}
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/downloads" element={<Downloads />} />
-          <Route path="/aigency" element={<Navigate to="/pro#aigency" replace />} />
-          <Route path="/aigency/technical" element={<Navigate to="/docs/aigency-architecture" replace />} />
-          <Route path="/docs/aigency-architecture" element={<AigencyArchitecture />} />
           <Route path="/pro" element={<Pro />} />
+          <Route path="/aigency" element={<Navigate to="/pro#aigency" replace />} />
+          <Route path="/aigency/technical" element={<Navigate to="/pro/aigency/technical" replace />} />
+          <Route path="/docs/aigency-architecture" element={<Navigate to="/pro/aigency/technical" replace />} />
+          <Route path="/pro/aigency/technical" element={<AigencyArchitecture />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/admin/*" element={<Admin />} />
