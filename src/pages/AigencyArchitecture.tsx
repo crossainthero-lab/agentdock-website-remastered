@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { Mermaid } from '../components/Mermaid';
 import { MarkdownContent } from '../components/MarkdownContent';
 import { bundledTechnicalSectionsWithIds, technicalArchitectureIntro } from '../content/technicalArchitecture';
 import type { ApiResponse, TechnicalSection } from '../types/cms';
 
-export function AIgencyTechnical() {
+export function AigencyArchitecture() {
   const [activeSection, setActiveSection] = useState('overview');
   const [sections, setSections] = useState<TechnicalSection[]>(() => bundledTechnicalSectionsWithIds());
   const [contentStatus, setContentStatus] = useState<'loading' | 'ready' | 'fallback'>('loading');
 
   useEffect(() => {
+    document.title = "AIgency Architecture — AgentDock Pro";
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -64,6 +66,9 @@ export function AIgencyTechnical() {
       
       {/* Page Header */}
       <div className="container mx-auto px-6 max-w-7xl mb-12">
+        <Link to="/pro#aigency" className="inline-flex items-center gap-2 text-sm text-[var(--color-ad-text-muted)] hover:text-[var(--color-accent-purple)] transition-colors mb-8">
+          <ArrowLeft className="w-4 h-4" /> Back to AgentDock Pro
+        </Link>
         <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">{technicalArchitectureIntro.title}</h1>
         <p className="text-[var(--color-ad-text-muted)] text-lg max-w-3xl">{technicalArchitectureIntro.description}</p>
         {contentStatus === 'loading' && (

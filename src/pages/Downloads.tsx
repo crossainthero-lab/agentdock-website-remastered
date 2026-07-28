@@ -35,6 +35,7 @@ npm run dev
 npm run build`;
 
   useEffect(() => {
+    document.title = "Downloads — AgentDock";
     let cancelled = false;
 
     fetch('/api/releases')

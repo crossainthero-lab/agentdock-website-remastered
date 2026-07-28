@@ -3,9 +3,9 @@ import type { TechnicalSection } from "../types/cms";
 type BundledTechnicalSection = Omit<TechnicalSection, "id" | "createdAt" | "updatedAt">;
 
 export const technicalArchitectureIntro = {
-  title: "AIgency Technical Architecture",
+  title: "AIgency Architecture",
   description:
-    "Deep dive into the planned orchestration layer, component architecture, and multi-agent coordination system.",
+    "Deep dive into the AgentDock Pro orchestration layer, component architecture, and multi-agent coordination system.",
 };
 
 export const bundledTechnicalSections: BundledTechnicalSection[] = [
@@ -13,7 +13,7 @@ export const bundledTechnicalSections: BundledTechnicalSection[] = [
     sectionKey: "overview",
     title: "Technical overview",
     contentMarkdown:
-      "AIgency is planned as a local-first coordination layer around supported coding agents, project workspaces, task state, permissions, and review workflows.\n\nIt acts as a secure intermediary between native CLI processes (like Claude Code or OpenAI Codex) and the local filesystem, ensuring every operation is deliberate, auditable, and isolated.",
+      "AIgency is planned as a local-first coordination layer inside AgentDock Pro around supported coding agents, project workspaces, task state, permissions, and review workflows.\n\nIt acts as a secure intermediary between native CLI processes (like Claude Code or OpenAI Codex) and the local filesystem, ensuring every operation is deliberate, auditable, and isolated.",
     mermaidSource: null,
     sortOrder: 10,
     isVisible: true,
@@ -22,7 +22,7 @@ export const bundledTechnicalSections: BundledTechnicalSection[] = [
     sectionKey: "architecture",
     title: "Core architecture",
     contentMarkdown:
-      "AIgency consists of the following primary components:\n\n- **Desktop interface:** The presentation layer for user interaction.\n- **Main process and secure preload bridge:** Safely connects UI to local system capabilities.\n- **Agent adapter layer:** Normalises interaction with different agent CLIs.\n- **Process and terminal management:** Handles native execution of agent commands.\n- **Workspace service:** Tracks active projects and sessions.\n- **Git and worktree service:** Manages source control isolation.\n- **Task orchestration engine:** The central router for task execution.\n- **Context and handoff service:** Filters and packages state for agents.\n- **Approval and security service:** Enforces permissions and human-in-the-loop validation.\n- **History and diagnostics storage:** Immutable log of all actions.\n- **Optional future cloud services:** Extends capabilities, but is not currently implemented.",
+      "The AIgency mode consists of the following primary components:\n\n- **Desktop interface:** The presentation layer for user interaction.\n- **Main process and secure preload bridge:** Safely connects UI to local system capabilities.\n- **Agent adapter layer:** Normalises interaction with different agent CLIs.\n- **Process and terminal management:** Handles native execution of agent commands.\n- **Workspace service:** Tracks active projects and sessions.\n- **Git and worktree service:** Manages source control isolation.\n- **Task orchestration engine:** The central router for task execution.\n- **Context and handoff service:** Filters and packages state for agents.\n- **Approval and security service:** Enforces permissions and human-in-the-loop validation.\n- **History and diagnostics storage:** Immutable log of all actions.\n- **Optional future cloud services:** Extends capabilities, but is not currently implemented.",
     mermaidSource: `flowchart TB
     Renderer[Desktop Renderer] --> Preload[Secure Preload Bridge]
     Preload --> Main[Electron Main Process]
@@ -167,7 +167,7 @@ export const bundledTechnicalSections: BundledTechnicalSection[] = [
     sectionKey: "future",
     title: "Local-first and future services",
     contentMarkdown:
-      "AgentDock currently works around locally installed agent CLIs. AIgency should preserve local control while future optional services may support account features, team collaboration, remote orchestration, billing, synchronisation, or shared project state.\n\n> **Note:** Future cloud services are planned extensions and do not currently exist in the open-source release.",
+      "AgentDock currently works around locally installed agent CLIs. The AIgency mode preserves local control while future optional AgentDock Pro services may support team collaboration, remote orchestration, synchronisation, or shared project state.\n\n> **Note:** Future cloud services are planned extensions and do not currently exist in the open-source release.",
     mermaidSource: null,
     sortOrder: 110,
     isVisible: true,
