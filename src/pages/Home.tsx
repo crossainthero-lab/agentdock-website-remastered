@@ -50,7 +50,9 @@ export function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.3 }}
           >
-            <ProductScreenshotFrame alt="AgentDock Standard Desktop Workspace Interface" />
+            <ProductScreenshotFrame alt="AgentDock Standard Desktop Workspace Interface">
+              <img src="/agdc-v0.1.2.png" alt="AgentDock Standard Desktop Workspace Interface" className="w-full h-full object-cover rounded-xl" />
+            </ProductScreenshotFrame>
           </motion.div>
         </div>
       </section>

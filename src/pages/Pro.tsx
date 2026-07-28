@@ -27,7 +27,9 @@ export function Pro() {
           </div>
 
           <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.2 }}>
-            <ProductScreenshotFrame alt="AgentDock Pro Multi-Agent Workflow Interface" />
+            <ProductScreenshotFrame alt="AgentDock Pro Multi-Agent Workflow Interface">
+              <img src="/agdc-pro-v0.1.0.png" alt="AgentDock Pro Multi-Agent Workflow Interface" className="w-full h-full object-cover rounded-xl" />
+            </ProductScreenshotFrame>
           </motion.div>
         </div>
       </section>
