@@ -3,7 +3,6 @@ export interface WaitlistRequest {
   email: string;
   useCase?: string;
   website?: string;
-  source?: string;
 }
 
 export interface WaitlistSuccessResponse {

@@ -5,7 +5,7 @@ import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 type FormState = 'idle' | 'submitting' | 'success' | 'already-joined' | 'error';
 
-export function WaitlistForm({ source }: { source?: string }) {
+export function WaitlistForm() {
   const [formState, setFormState] = useState<FormState>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -71,8 +71,7 @@ export function WaitlistForm({ source }: { source?: string }) {
       name: name.trim(),
       email: email.trim(),
       useCase: useCase.trim() || undefined,
-      website,
-      source
+      website
     };
 
     try {
@@ -186,7 +185,7 @@ export function WaitlistForm({ source }: { source?: string }) {
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <label htmlFor="waitlist-usecase" className="text-sm font-bold text-white">What would you use AgentDock Pro for?</label>
+            <label htmlFor="waitlist-usecase" className="text-sm font-bold text-white">What would you use AIgency for?</label>
             <span className="text-xs text-[var(--color-ad-text-muted)]">Optional</span>
           </div>
           <textarea
@@ -237,7 +236,7 @@ export function WaitlistForm({ source }: { source?: string }) {
               <span className="w-40 text-center">Joining waitlist…</span>
             </>
           ) : (
-            <span className="w-56 text-center">Join the AgentDock Pro Waitlist</span>
+            <span className="w-40 text-center">Join the AIgency Waitlist</span>
           )}
         </button>
       </form>

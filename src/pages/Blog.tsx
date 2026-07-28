@@ -53,14 +53,14 @@ export function Blog() {
         <div className="py-24 text-center border border-[var(--color-accent-amber-border)] rounded-xl bg-[var(--color-accent-amber-soft)]">
           <p className="text-xl text-white font-medium mb-2">Posts could not be loaded.</p>
           <p className="text-sm text-[var(--color-ad-text-muted)] max-w-md mx-auto">
-            Try refreshing the page. AgentDock and AgentDock Pro updates will appear here when available.
+            Try refreshing the page. AgentDock and AIgency updates will appear here when available.
           </p>
         </div>
       ) : posts.length === 0 ? (
         <div className="py-24 text-center border border-dashed border-[var(--color-ad-border)] rounded-xl bg-[var(--color-ad-surface)]">
           <p className="text-xl text-white font-medium mb-2">No posts yet.</p>
           <p className="text-sm text-[var(--color-ad-text-muted)] max-w-md mx-auto">
-            AgentDock and AgentDock Pro updates will appear here when published.
+            AgentDock and AIgency updates will appear here when published.
           </p>
         </div>
       ) : (

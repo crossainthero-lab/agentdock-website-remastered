@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { fallbackReleaseData } from '../config/downloads';
 import type { ApiResponse, LegacyReleaseAsset, PlatformRelease, ReleaseManagement } from '../types/cms';
 import { Download, Terminal, Copy, Check, ExternalLink } from 'lucide-react';
@@ -36,7 +35,6 @@ npm run dev
 npm run build`;
 
   useEffect(() => {
-    document.title = "Downloads — AgentDock";
     let cancelled = false;
 
     fetch('/api/releases')
@@ -181,27 +179,6 @@ npm run build`;
             <p className="text-sm text-[var(--color-ad-text-muted)]">
               Check the <a href="https://github.com/crossainthero-lab/AgentDock" target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent-purple)] font-medium underline hover:no-underline hover:text-[var(--color-accent-purple-hover)]">repository</a> for detailed build instructions.
             </p>
-          </div>
-        </section>
-        <section className="pt-8 border-t border-[var(--color-ad-border)]">
-          <div className="p-8 md:p-10 border border-[var(--color-accent-amber-border)] bg-gradient-to-br from-[var(--color-ad-surface)] to-[#151108] rounded-2xl text-center md:text-left flex flex-col md:flex-row items-center gap-8">
-            <div className="flex-1">
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">Looking for the complete AgentDock Pro experience?</h2>
-              <p className="text-[var(--color-ad-text-muted)] mb-4 text-sm leading-relaxed">
-                AgentDock Pro is a separate premium application that includes AIgency for multi-agent orchestration. It is currently in development. Standard AgentDock downloads remain separate.
-              </p>
-              <div className="text-sm font-medium text-white mb-6">
-                Expected pricing: <span className="text-[var(--color-accent-amber)]">$59.99/month</span>
-              </div>
-              <div className="flex gap-4 flex-wrap justify-center md:justify-start">
-                <Link to="/pro" className="inline-flex items-center justify-center px-6 py-2 text-sm font-bold text-[var(--color-ad-bg)] bg-white rounded-md hover:bg-gray-200 transition-all">
-                  Explore AgentDock Pro
-                </Link>
-                <Link to="/pro#waitlist" className="inline-flex items-center justify-center px-6 py-2 text-sm font-bold text-white border border-[var(--color-accent-amber-border)] rounded-md hover:border-[var(--color-accent-amber)] hover:bg-[var(--color-accent-amber-soft)] transition-all">
-                  Join the Waitlist
-                </Link>
-              </div>
-            </div>
           </div>
         </section>
       </div>
