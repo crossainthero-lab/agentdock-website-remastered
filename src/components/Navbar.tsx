@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, LayoutTemplate } from 'lucide-react';
+import { Menu, X, LayoutTemplate, Github } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 
-interface NavbarProps {
-  onOpenWaitlist: () => void;
-}
-
-export function Navbar({ onOpenWaitlist }: NavbarProps) {
+export function Navbar({ onOpenJoinPro, onOpenContact }: { onOpenJoinPro: () => void; onOpenContact: () => void }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,20 +16,16 @@ export function Navbar({ onOpenWaitlist }: NavbarProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollTo = (id: string) => {
+  const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
   };
 
   const navLinks = [
-    { name: 'Product', id: 'product' },
-    { name: 'How it works', id: 'how-it-works' },
-    { name: 'AIgency', id: 'aigency' },
-    { name: 'Features', id: 'features' },
-    { name: 'Roadmap', id: 'roadmap' },
+    { name: 'Home', path: '/' },
+    { name: 'AgentDock Pro', path: '/pro' },
+    { name: 'AIgency', path: '/aigency' },
+    { name: 'Blog', path: '/blog' },
+    { name: 'Downloads', path: '/downloads' },
   ];
 
   return (
@@ -42,30 +36,47 @@ export function Navbar({ onOpenWaitlist }: NavbarProps) {
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <Link to="/" className="flex items-center gap-2 cursor-pointer" onClick={closeMobileMenu}>
             <LayoutTemplate className="w-6 h-6 text-blue-500" />
             <span className="font-semibold text-lg tracking-tight">AgentDock</span>
-          </div>
+          </Link>
 
           <nav className="hidden md:flex items-center gap-8">
             {navLinks.map((link) => (
-              <button
-                key={link.id}
-                onClick={() => scrollTo(link.id)}
-                className="text-sm text-gray-400 hover:text-white transition-colors"
+              <Link
+                key={link.path}
+                to={link.path}
+                className={`text-sm transition-colors flex items-center gap-1.5 ${
+                  location.pathname === link.path ? 'text-white' : 'text-gray-400 hover:text-white'
+                }`}
               >
                 {link.name}
-              </button>
+              </Link>
             ))}
           </nav>
 
           <div className="hidden md:flex items-center gap-4">
             <button
-              onClick={onOpenWaitlist}
-              className="bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors border border-white/5"
+              onClick={onOpenContact}
+              className="text-gray-400 hover:text-white text-sm font-medium transition-colors"
             >
-              Join waitlist
+              Contact
             </button>
+            <button
+              onClick={onOpenJoinPro}
+              className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors border border-blue-400/20"
+            >
+              Join AgentDock Pro
+            </button>
+            <a
+              href="https://github.com/crossainthero-lab/AgentDock"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors border border-white/5 flex items-center gap-2"
+            >
+              <Github className="w-4 h-4" />
+              GitHub
+            </a>
           </div>
 
           <button
@@ -87,23 +98,44 @@ export function Navbar({ onOpenWaitlist }: NavbarProps) {
           >
             <div className="flex flex-col gap-6">
               {navLinks.map((link) => (
-                <button
-                  key={link.id}
-                  onClick={() => scrollTo(link.id)}
-                  className="text-left text-lg text-gray-300 hover:text-white transition-colors"
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  onClick={closeMobileMenu}
+                  className={`text-left text-lg transition-colors flex items-center gap-2 ${
+                    location.pathname === link.path ? 'text-white' : 'text-gray-300 hover:text-white'
+                  }`}
                 >
                   {link.name}
-                </button>
+                </Link>
               ))}
               <button
                 onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  onOpenWaitlist();
+                  onOpenContact();
+                  closeMobileMenu();
                 }}
-                className="bg-white text-black text-center font-medium px-4 py-3 rounded-lg transition-colors mt-2"
+                className="text-left text-lg text-gray-300 hover:text-white transition-colors flex items-center gap-2"
               >
-                Join waitlist
+                Contact
               </button>
+              <button
+                onClick={() => {
+                  onOpenJoinPro();
+                  closeMobileMenu();
+                }}
+                className="bg-blue-600 text-white text-center font-medium px-4 py-3 rounded-lg transition-colors mt-2"
+              >
+                Join AgentDock Pro
+              </button>
+              <a
+                href="https://github.com/crossainthero-lab/AgentDock"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-white text-black text-center font-medium px-4 py-3 rounded-lg transition-colors mt-2 flex items-center justify-center gap-2"
+              >
+                <Github className="w-5 h-5" />
+                GitHub
+              </a>
             </div>
           </motion.div>
         )}

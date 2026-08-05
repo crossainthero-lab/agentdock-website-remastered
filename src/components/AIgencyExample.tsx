@@ -32,7 +32,7 @@ export function AIgencyExample() {
             >
               <div className="text-blue-400 font-semibold mb-3 flex items-center gap-2">
                 <GitPullRequest className="w-5 h-5" />
-                Claude Code
+                Claude
               </div>
               <p className="text-gray-400 text-sm leading-relaxed">
                 Builds the interface and application code.

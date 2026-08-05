@@ -1,44 +1,65 @@
 import { useState } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
-import { Hero } from './components/Hero';
-import { Problem } from './components/Problem';
-import { Solution } from './components/Solution';
-import { HowItWorks } from './components/HowItWorks';
-import { AIgency } from './components/AIgency';
-import { AIgencyExample } from './components/AIgencyExample';
-import { Features } from './components/Features';
-import { Agents } from './components/Agents';
-import { Roadmap } from './components/Roadmap';
-import { CTA } from './components/CTA';
 import { Footer } from './components/Footer';
-import { WaitlistModal } from './components/WaitlistModal';
+import { JoinProModal } from './components/JoinProModal';
+import { ContactModal } from './components/ContactModal';
+import { Home } from './pages/Home';
+import { AIgency } from './pages/AIgency';
+import { Blog } from './pages/Blog';
+import { BlogPost } from './pages/BlogPost';
+import { Downloads } from './pages/Downloads';
+import { Pro } from './pages/Pro';
+import { Admin } from './pages/Admin';
+import ScrollToTop from './components/ScrollToTop';
+import { analytics } from './lib/analytics';
+import { AnnouncementBar } from './components/AnnouncementBar';
 
-export default function App() {
-  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
+function AppShell() {
+  const location = useLocation();
+  const isAdmin = location.pathname.startsWith('/admin');
+  const [isJoinProOpen, setIsJoinProOpen] = useState(false);
+  const [isContactOpen, setIsContactOpen] = useState(false);
 
-  const openWaitlist = () => setIsWaitlistOpen(true);
-  const closeWaitlist = () => setIsWaitlistOpen(false);
+  const openJoinPro = () => {
+    analytics.track('join_pro_cta_clicked');
+    setIsJoinProOpen(true);
+  };
+
+  const openContact = () => {
+    analytics.track('contact_cta_clicked');
+    setIsContactOpen(true);
+  };
 
   return (
-    <div className="min-h-screen bg-[#05050A] font-sans selection:bg-blue-500/30">
-      <Navbar onOpenWaitlist={openWaitlist} />
-      
-      <main>
-        <Hero onOpenWaitlist={openWaitlist} />
-        <Problem />
-        <Solution />
-        <HowItWorks />
-        <Agents />
-        <AIgency />
-        <AIgencyExample />
-        <Features />
-        <Roadmap />
-        <CTA onOpenWaitlist={openWaitlist} />
-      </main>
+    <>
+      <ScrollToTop />
+      {!isAdmin && <AnnouncementBar onOpenJoinPro={openJoinPro} />}
+      <div className="min-h-screen bg-[#05050A] font-sans selection:bg-blue-500/30 flex flex-col">
+        {!isAdmin && <Navbar onOpenJoinPro={openJoinPro} onOpenContact={openContact} />}
+        <main className="flex-1">
+          <Routes>
+            <Route path="/" element={<Home onOpenJoinPro={openJoinPro} onOpenContact={openContact} />} />
+            <Route path="/pro" element={<Pro onOpenJoinPro={openJoinPro} />} />
+            <Route path="/aigency" element={<AIgency onOpenJoinPro={openJoinPro} />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/downloads" element={<Downloads />} />
+            <Route path="/admin" element={<Admin />} />
+          </Routes>
+        </main>
+        {!isAdmin && <Footer onOpenJoinPro={openJoinPro} onOpenContact={openContact} />}
+        <JoinProModal isOpen={isJoinProOpen} onClose={() => setIsJoinProOpen(false)} />
+        <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
+      </div>
+    </>
+  );
+}
 
-      <Footer onOpenWaitlist={openWaitlist} />
-      
-      <WaitlistModal isOpen={isWaitlistOpen} onClose={closeWaitlist} />
-    </div>
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppShell />
+    </BrowserRouter>
   );
 }
