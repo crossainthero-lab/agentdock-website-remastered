@@ -141,6 +141,9 @@ const DEFAULT_ANNOUNCEMENT: SiteAnnouncement = {
   text: "",
   linkText: "",
   linkUrl: "",
+  openInNewTab: false,
+  dismissible: false,
+  version: "default",
   updatedAt: null,
 };
 
@@ -504,14 +507,25 @@ export async function updateAnnouncementSettings(db: CmsDatabase, rawInput: unkn
   }
 
   const input = validation.value;
-  const settingValue = JSON.stringify({
-    enabled: input.enabled,
-    text: input.text,
-    linkText: input.linkText,
-    linkUrl: input.linkUrl,
-  });
 
   try {
+    const existing = await getAnnouncementSettings(db);
+    if (input.updatedAt && existing.updatedAt && input.updatedAt !== existing.updatedAt) {
+      return jsonError("Announcement settings changed after you opened them. Reload before saving.", 409);
+    }
+
+    const previousVersion = existing.version || "default";
+    const version = isSameAnnouncementVersion(existing, input) ? previousVersion : createAnnouncementVersion();
+    const settingValue = JSON.stringify({
+      enabled: input.enabled,
+      text: input.text,
+      linkText: input.linkText,
+      linkUrl: input.linkUrl,
+      openInNewTab: input.openInNewTab,
+      dismissible: input.dismissible,
+      version,
+    });
+
     await db
       .prepare(
         `INSERT INTO site_settings (setting_key, setting_value, updated_at)
@@ -971,10 +985,21 @@ function validateAnnouncementInput(rawInput: unknown): { value: Required<SiteAnn
   const text = normalizeString(input.text);
   const linkText = normalizeString(input.linkText);
   const linkUrl = normalizeString(input.linkUrl);
+  const openInNewTab = input.openInNewTab === true;
+  const dismissible = input.dismissible === true;
+  const version = normalizeString(input.version);
   const updatedAt = normalizeNullableString(input.updatedAt);
 
   if (input.enabled !== true && input.enabled !== false) {
     return { error: "Enabled must be true or false." };
+  }
+
+  if (input.openInNewTab !== undefined && input.openInNewTab !== true && input.openInNewTab !== false) {
+    return { error: "Open in new tab must be true or false." };
+  }
+
+  if (input.dismissible !== undefined && input.dismissible !== true && input.dismissible !== false) {
+    return { error: "Dismissible must be true or false." };
   }
 
   if (text.length > MAX_ANNOUNCEMENT_TEXT_LENGTH) {
@@ -1004,6 +1029,9 @@ function validateAnnouncementInput(rawInput: unknown): { value: Required<SiteAnn
       text,
       linkText: linkUrl ? linkText : "",
       linkUrl,
+      openInNewTab,
+      dismissible,
+      version,
       updatedAt,
     },
   };
@@ -1284,13 +1312,23 @@ function mapAnnouncementSetting(row: SiteSettingsRow): SiteAnnouncement {
     const text = normalizeString(parsed.text);
     const linkUrl = normalizeString(parsed.linkUrl);
     const linkText = normalizeString(parsed.linkText);
-
-    return {
+    const openInNewTab = typeof parsed.openInNewTab === "boolean"
+      ? parsed.openInNewTab
+      : Boolean(linkUrl && !linkUrl.startsWith("/"));
+    const announcement: SiteAnnouncement = {
       enabled: parsed.enabled === true,
       text: text.slice(0, MAX_ANNOUNCEMENT_TEXT_LENGTH),
       linkText: linkUrl ? linkText.slice(0, MAX_ANNOUNCEMENT_LINK_TEXT_LENGTH) : "",
       linkUrl: validateAnnouncementUrl(linkUrl) ? "" : linkUrl,
+      openInNewTab,
+      dismissible: parsed.dismissible === true,
+      version: normalizeString(parsed.version),
       updatedAt: row.updated_at,
+    };
+
+    return {
+      ...announcement,
+      version: announcement.version || legacyAnnouncementVersion(announcement),
     };
   } catch {
     return DEFAULT_ANNOUNCEMENT;
@@ -1384,6 +1422,47 @@ function mapDatabaseWriteError(error: unknown, fallback: string): Response {
 
   console.error("CMS database write failed", { message });
   return jsonError(fallback, 500);
+}
+
+function isSameAnnouncementVersion(existing: SiteAnnouncement, input: Required<SiteAnnouncementInput>): boolean {
+  return existing.enabled === input.enabled
+    && existing.text === input.text
+    && existing.linkText === input.linkText
+    && existing.linkUrl === input.linkUrl
+    && existing.openInNewTab === input.openInNewTab
+    && existing.dismissible === input.dismissible;
+}
+
+function createAnnouncementVersion(): string {
+  if (typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `v-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function legacyAnnouncementVersion(announcement: SiteAnnouncement): string {
+  return `legacy-${hashString(stableAnnouncementPayload(announcement))}`;
+}
+
+function stableAnnouncementPayload(announcement: SiteAnnouncement | Required<SiteAnnouncementInput>): string {
+  return JSON.stringify({
+    enabled: announcement.enabled,
+    text: announcement.text,
+    linkText: announcement.linkText,
+    linkUrl: announcement.linkUrl,
+    openInNewTab: announcement.openInNewTab,
+    dismissible: announcement.dismissible,
+  });
+}
+
+function hashString(value: string): string {
+  let hash = 5381;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = ((hash << 5) + hash) ^ value.charCodeAt(index);
+  }
+
+  return (hash >>> 0).toString(36);
 }
 
 function validateAnnouncementUrl(value: string): string | null {

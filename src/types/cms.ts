@@ -61,7 +61,10 @@ export interface SiteAnnouncement {
   text: string;
   linkText: string;
   linkUrl: string;
-  updatedAt: string | null;
+  openInNewTab: boolean;
+  dismissible: boolean;
+  version: string;
+  updatedAt?: string | null;
 }
 
 export interface SiteAnnouncementInput {
@@ -69,6 +72,9 @@ export interface SiteAnnouncementInput {
   text: string;
   linkText?: string;
   linkUrl?: string;
+  openInNewTab?: boolean;
+  dismissible?: boolean;
+  version?: string;
   updatedAt?: string | null;
 }
 

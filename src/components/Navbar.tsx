@@ -3,8 +3,10 @@ import { Link, useLocation } from 'react-router-dom';
 import { Github } from 'lucide-react';
 import { AgentDockIcon } from './icons/AgentDockIcon';
 import { motion } from 'motion/react';
-import { AnnouncementBar, isVisibleAnnouncement } from './AnnouncementBar';
+import { AnnouncementBar } from './AnnouncementBar';
 import type { ApiResponse, SiteAnnouncement } from '../types/cms';
+
+const announcementRequest = fetchAnnouncement();
 
 export function Navbar() {
   const location = useLocation();
@@ -20,14 +22,10 @@ export function Navbar() {
   useEffect(() => {
     let isMounted = true;
 
-    fetch('/api/announcement')
-      .then(async (response) => {
-        const body = await response.json() as ApiResponse<SiteAnnouncement>;
-        if (!response.ok || !body.ok) {
-          throw new Error('error' in body ? body.error : 'Announcement could not be loaded.');
-        }
+    announcementRequest
+      .then((data) => {
         if (isMounted) {
-          setAnnouncement(body.data);
+          setAnnouncement(data);
         }
       })
       .catch(() => {
@@ -91,4 +89,14 @@ export function Navbar() {
       </div>
     </header>
   );
+}
+
+async function fetchAnnouncement(): Promise<SiteAnnouncement | null> {
+  const response = await fetch('/api/announcement');
+  const body = await response.json() as ApiResponse<SiteAnnouncement>;
+  if (!response.ok || !body.ok) {
+    throw new Error('error' in body ? body.error : 'Announcement could not be loaded.');
+  }
+
+  return body.data;
 }

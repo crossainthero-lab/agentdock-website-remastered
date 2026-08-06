@@ -63,6 +63,9 @@ const emptyAnnouncementDraft: SiteAnnouncementInput = {
   text: '',
   linkText: '',
   linkUrl: '',
+  openInNewTab: false,
+  dismissible: false,
+  version: 'default',
   updatedAt: null,
 };
 
@@ -322,6 +325,23 @@ function AnnouncementAdmin({ onMessage }: { onMessage: (message: string) => void
                   />
                 </AdminField>
               </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <label className="flex items-center justify-between gap-4 rounded-md border border-[var(--color-ad-border)] bg-[var(--color-ad-bg)] px-3 py-3 text-sm text-white">
+                  <span>
+                    <span className="block font-medium">Open link in new tab</span>
+                    <span className="text-xs text-[var(--color-ad-text-muted)]">Uses secure new-tab attributes on the public link.</span>
+                  </span>
+                  <input type="checkbox" checked={draft.openInNewTab === true} onChange={(event) => updateDraft({ openInNewTab: event.target.checked })} className="h-5 w-5 accent-[var(--color-accent-purple)]" />
+                </label>
+                <label className="flex items-center justify-between gap-4 rounded-md border border-[var(--color-ad-border)] bg-[var(--color-ad-bg)] px-3 py-3 text-sm text-white">
+                  <span>
+                    <span className="block font-medium">Dismissible</span>
+                    <span className="text-xs text-[var(--color-ad-text-muted)]">Show a close button and remember dismissal per version.</span>
+                  </span>
+                  <input type="checkbox" checked={draft.dismissible === true} onChange={(event) => updateDraft({ dismissible: event.target.checked })} className="h-5 w-5 accent-[var(--color-accent-purple)]" />
+                </label>
+              </div>
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3">
@@ -333,7 +353,19 @@ function AnnouncementAdmin({ onMessage }: { onMessage: (message: string) => void
 
           <EditorPanel title="Preview">
             <div className="overflow-hidden rounded-md border border-[var(--color-ad-border)] bg-[var(--color-ad-bg)]">
-              <AnnouncementBar announcement={{ enabled: draft.enabled, text: draft.text, linkText: draft.linkText ?? '', linkUrl: draft.linkUrl ?? '', updatedAt: draft.updatedAt ?? null }} />
+              <AnnouncementBar
+                preview
+                announcement={{
+                  enabled: draft.enabled,
+                  text: draft.text,
+                  linkText: draft.linkText ?? '',
+                  linkUrl: draft.linkUrl ?? '',
+                  openInNewTab: draft.openInNewTab === true,
+                  dismissible: draft.dismissible === true,
+                  version: draft.version ?? 'preview',
+                  updatedAt: draft.updatedAt ?? null,
+                }}
+              />
               <div className="flex h-14 items-center justify-between border-t border-[var(--color-ad-border)] px-4 text-sm text-[var(--color-ad-text-muted)]">
                 <span className="font-bold text-white">AgentDock</span>
                 <span>Navigation preview</span>
@@ -1181,6 +1213,9 @@ function toAnnouncementInput(announcement: SiteAnnouncement): SiteAnnouncementIn
     text: announcement.text,
     linkText: announcement.linkText,
     linkUrl: announcement.linkUrl,
+    openInNewTab: announcement.openInNewTab,
+    dismissible: announcement.dismissible,
+    version: announcement.version,
     updatedAt: announcement.updatedAt,
   };
 }
